@@ -15,7 +15,7 @@ export function requestId(req, res, next) {
   next();
 }
 
-function sendError(req, res, status, code, message, details) {
+export function sendError(req, res, status, code, message, details) {
   res.status(status).json({
     error: { code, message, ...(details && { details }), requestId: req.id },
   });
