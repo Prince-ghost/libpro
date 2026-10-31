@@ -52,3 +52,16 @@ export async function isDbHealthy() {
     return false;
   }
 }
+// Runs fn(session) as one all-or-nothing transaction; transient conflicts are retried automatically.
+export async function runInTransaction(fn) {
+  const session = await mongoose.startSession();
+  try {
+    let result;
+    await session.withTransaction(async () => {
+      result = await fn(session);
+    });
+    return result;
+  } finally {
+    await session.endSession();
+  }
+}

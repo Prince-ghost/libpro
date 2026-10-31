@@ -12,7 +12,7 @@ const notFound = () => new AppError(404, "NOT_FOUND", "Book not found.");
 const locked = () => new AppError(409, "BOOK_LOCKED", "This listing can no longer be changed.");
 
 // The only shapes of a listing that leave the server. Public: no seller id, no moderation state.
-function toDto(book, sellerName, { includePrivate = false } = {}) {
+export function toDto(book, sellerName, { includePrivate = false } = {}) {
   const dto = {
     id: String(book._id),
     title: book.title,
@@ -39,12 +39,12 @@ function toDto(book, sellerName, { includePrivate = false } = {}) {
 const canManage = (book, actor) =>
   Boolean(actor) && (actor.role === "admin" || String(book.sellerId) === actor.id);
 
-async function sellerNameOf(sellerId) {
+export async function sellerNameOf(sellerId) {
   const user = await User.findById(sellerId).select("name").lean();
   return user?.name;
 }
 
-async function sellerNameMap(books) {
+export async function sellerNameMap(books) {
   const ids = [...new Set(books.map((b) => String(b.sellerId)))];
   if (ids.length === 0) return new Map();
   const users = await User.find({ _id: mongoose.trusted({ $in: ids }) }).select("name").lean();

@@ -9,7 +9,9 @@
   "scripts": {
     "test": "vitest run",
     "dev": "node --watch server.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "make-admin": "node scripts/make-admin.js",
+    "indexes": "node scripts/sync-indexes.js"
   },
   "dependencies": {
     "argon2": "^0.45.1",

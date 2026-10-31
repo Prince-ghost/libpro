@@ -12,6 +12,9 @@ const schema = z
     CLIENT_ORIGIN: z.string().url().default("http://localhost:3000"),
     SESSION_TTL_DAYS: z.coerce.number().int().min(1).max(90).default(7),
     AUTH_RATE_LIMIT_MAX: z.coerce.number().int().min(1).max(10000).default(10),
+    ORDER_RATE_LIMIT_MAX: z.coerce.number().int().min(1).max(10000).default(20),
+    // How many reverse proxies sit in front of the app (0 = none). Needed for correct client IPs.
+    TRUST_PROXY: z.coerce.number().int().min(0).max(5).default(0),
     MONGODB_URI: mongoUri.optional(),
     MONGODB_URI_TEST: mongoUri.optional(),
   })
@@ -19,6 +22,9 @@ const schema = z
     const key = vars.NODE_ENV === "test" ? "MONGODB_URI_TEST" : "MONGODB_URI";
     if (!vars[key]) {
       ctx.addIssue({ code: "custom", path: [key], message: "Required" });
+    }
+    if (vars.NODE_ENV === "production" && !vars.CLIENT_ORIGIN.startsWith("https://")) {
+      ctx.addIssue({ code: "custom", path: ["CLIENT_ORIGIN"], message: "Must use https in production" });
     }
   });
 
