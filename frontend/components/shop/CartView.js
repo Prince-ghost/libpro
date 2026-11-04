@@ -116,18 +116,16 @@ export default function CartView() {
           <aside className="h-fit rounded-2xl border border-line bg-surface p-5">
             <h2 className="font-serif text-xl font-bold">Summary</h2>
             <p className="mt-3 flex justify-between gap-3">
-              <span>
-                Items ({cart.count})
-              </span>
+              <span>Items ({cart.count})</span>
               <span className="font-bold">{formatPrice(cart.subtotalMinor)}</span>
             </p>
             <p className="mt-4 text-sm text-muted">
               Prices here are for your information. Shipping and the final total are worked out when you check out, using
               the prices at that moment.
             </p>
-            <p className="mt-3 rounded-xl border border-line bg-paper px-3 py-2 text-sm text-muted">
-              Checkout is coming in the next update.
-            </p>
+            <Link href="/checkout" className={`mt-4 block text-center ${BUTTON}`}>
+              Proceed to checkout
+            </Link>
           </aside>
         </div>
       )}

@@ -12,14 +12,14 @@ export class ApiError extends Error {
   }
 }
 
-export async function api(path, { method = "GET", body, signal } = {}) {
+export async function api(path, { method = "GET", body, signal, headers } = {}) {
   let res;
   try {
     res = await fetch(`${API_URL}${path}`, {
       method,
       credentials: "include", // sends the HttpOnly login cookie
       cache: "no-store",
-      headers: body ? { "Content-Type": "application/json" } : undefined,
+      headers: body || headers ? { ...(body ? { "Content-Type": "application/json" } : {}), ...headers } : undefined,
       body: body ? JSON.stringify(body) : undefined,
       signal,
     });

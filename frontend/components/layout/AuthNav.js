@@ -41,6 +41,9 @@ export default function AuthNav() {
         <Link href="/my-listings" className={LINK}>
           My listings
         </Link>
+        <Link href="/orders" className={LINK}>
+          Orders
+        </Link>
         <Link
           href="/wishlist"
           className={LINK}
@@ -55,7 +58,7 @@ export default function AuthNav() {
         >
           Cart{cartCount > 0 ? ` (${cartCount})` : ""}
         </Link>
-        <span className="hidden max-w-[10rem] truncate text-sm text-muted lg:inline" title={user.name}>
+        <span className="hidden max-w-[10rem] truncate text-sm text-muted xl:inline" title={user.name}>
           {user.name}
         </span>
         <button
