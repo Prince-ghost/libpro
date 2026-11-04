@@ -6,6 +6,8 @@ import { api } from "@/lib/api";
 import { AUDIENCE_LABELS, CONDITION_LABELS, formatDate, formatPrice } from "@/lib/format";
 import Alert from "@/components/ui/Alert";
 import BookCover from "@/components/books/BookCover";
+import CartActions from "@/components/shop/CartActions";
+import WishlistButton from "@/components/shop/WishlistButton";
 
 const ID_RE = /^[a-f\d]{24}$/i;
 const MODERATION_TEXT = { pending: "waiting for approval", rejected: "not approved" };
@@ -94,6 +96,12 @@ export default function BookDetail({ id }) {
   if (book.status === "sold") notices.push("This book has been sold.");
   if (book.status === "reserved") notices.push("This book is reserved for another buyer.");
 
+  // Only approved listings can go in a cart or wishlist. Owners and staff also get an approval
+  // status back, and a listing that is not approved yet has no cart or wishlist buttons.
+  const approved = book.moderationState === undefined || book.moderationState === "approved";
+  const canBuy = approved && book.status === "active";
+  const canSave = approved && book.status !== "archived";
+
   return (
     <article>
       <Link href="/books" className="text-sm font-medium text-brand underline">
@@ -124,6 +132,13 @@ export default function BookDetail({ id }) {
             </span>
           </p>
 
+          {(canBuy || canSave) && (
+            <div className="mt-5 flex flex-wrap items-start gap-3">
+              {canBuy && <CartActions book={book} />}
+              {canSave && <WishlistButton book={book} />}
+            </div>
+          )}
+
           <dl className="mt-6 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
             <Row label="Condition">{CONDITION_LABELS[book.condition] ?? book.condition}</Row>
             <Row label="Suitable for">{AUDIENCE_LABELS[book.audience] ?? book.audience}</Row>
@@ -139,12 +154,6 @@ export default function BookDetail({ id }) {
             <p className="mt-2 whitespace-pre-line break-words">{book.description}</p>
           ) : (
             <p className="mt-2 text-muted">The seller has not added a description.</p>
-          )}
-
-          {book.status === "active" && (
-            <p className="mt-8 rounded-xl border border-line bg-paper px-4 py-3 text-sm text-muted">
-              Cart and checkout are still being built, so this book cannot be bought yet.
-            </p>
           )}
         </div>
       </div>
