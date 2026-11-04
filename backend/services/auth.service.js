@@ -32,7 +32,7 @@ export async function registerUser({ name, email, password }) {
   }
 }
 
-async function createSession(userId) {
+export async function createSession(userId) {
   const token = generateToken();
   const expiresAt = new Date(Date.now() + SESSION_MS);
   await Session.create({ userId, tokenHash: hashToken(token), expiresAt });

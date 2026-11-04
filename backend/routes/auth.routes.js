@@ -3,14 +3,22 @@ import { env } from "../lib/env.js";
 import { createLimiter } from "../lib/rate-limit.js";
 import { parseBody } from "../lib/validate.js";
 import { COOKIE_NAME, requireAuth, setSessionCookie, clearSessionCookie } from "../lib/auth.js";
+import { verifyGoogleIdToken } from "../lib/google.js";
 import { registerSchema, loginSchema } from "../schemas/auth.schema.js";
+import { googleSignInSchema } from "../schemas/google.schema.js";
 import { registerUser, loginUser, destroySession } from "../services/auth.service.js";
+import { loginWithGoogle } from "../services/google-auth.service.js";
 
 const router = Router();
 
 const registerLimiter = createLimiter({ windowMs: 60 * 60 * 1000, max: env.AUTH_RATE_LIMIT_MAX });
 // Only failed logins count, so normal use is never throttled.
 const loginLimiter = createLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: env.AUTH_RATE_LIMIT_MAX,
+  skipSuccessfulRequests: true,
+});
+const googleLimiter = createLimiter({
   windowMs: 15 * 60 * 1000,
   max: env.AUTH_RATE_LIMIT_MAX,
   skipSuccessfulRequests: true,
@@ -26,6 +34,16 @@ router.post("/login", loginLimiter, async (req, res) => {
   const input = parseBody(loginSchema, req.body);
   const { user, token, expiresAt } = await loginUser(input);
   setSessionCookie(res, token, expiresAt); // the token goes only in the cookie, never in the body
+  res.status(200).json({ data: { user }, meta: { requestId: req.id } });
+});
+
+// Only the signed Google token is read from the request. Email, name and id all come from
+// Google's verified reply, and role and status are never taken from the client.
+router.post("/google", googleLimiter, async (req, res) => {
+  const { credential } = parseBody(googleSignInSchema, req.body);
+  const profile = await verifyGoogleIdToken(credential);
+  const { user, token, expiresAt } = await loginWithGoogle(profile);
+  setSessionCookie(res, token, expiresAt);
   res.status(200).json({ data: { user }, meta: { requestId: req.id } });
 });
 

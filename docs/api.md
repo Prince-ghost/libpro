@@ -93,3 +93,5 @@ In `backend/`, with your `.env` in place and the person already registered:
     npm run make-admin -- someone@example.com --revoke
 
 It prints the database it used. It refuses to remove the last admin. Both actions are written to the audit log with `source: "cli"`.
+
+| POST | /api/auth/google | public, rate-limited | Body `{ credential }` (Google ID token) only. Verified server-side (signature, audience, expiry, verified email). Creates the account or signs in, sets the same cookie as login. If the email matches a password account, the account is linked, the old password stops working and old sessions end. 400, 401 `INVALID_GOOGLE_TOKEN` / `SIGNIN_FAILED`, 503 `GOOGLE_NOT_CONFIGURED`. |

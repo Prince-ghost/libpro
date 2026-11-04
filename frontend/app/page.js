@@ -1,3 +1,4 @@
+import Link from "next/link";
 import ApiStatus from "@/components/ui/ApiStatus";
 
 export default function HomePage() {
@@ -10,11 +11,19 @@ export default function HomePage() {
       <p className="mt-4 text-lg text-muted">
         BookBack connects students who have finished with their books to students who need them.
       </p>
+      <div className="mt-8">
+        <Link
+          href="/books"
+          className="inline-block rounded-lg bg-brand px-6 py-3 font-medium text-white hover:bg-brand-dark"
+        >
+          Browse books
+        </Link>
+      </div>
       <div className="mt-10">
         <ApiStatus />
       </div>
       <p className="mt-6 text-sm text-muted">
-        This is an early build. Browsing, selling and checkout are being added step by step.
+        This is an early build. Browsing is open, and selling and checkout are being added step by step.
       </p>
     </div>
   );

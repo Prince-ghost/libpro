@@ -13,8 +13,12 @@ const schema = z
     SESSION_TTL_DAYS: z.coerce.number().int().min(1).max(90).default(7),
     AUTH_RATE_LIMIT_MAX: z.coerce.number().int().min(1).max(10000).default(10),
     ORDER_RATE_LIMIT_MAX: z.coerce.number().int().min(1).max(10000).default(20),
-    // How many reverse proxies sit in front of the app (0 = none). Needed for correct client IPs.
     TRUST_PROXY: z.coerce.number().int().min(0).max(5).default(0),
+    // Optional: without it, the Google sign-in route answers 503 and everything else keeps working.
+    GOOGLE_CLIENT_ID: z
+      .string()
+      .regex(/^[A-Za-z0-9._-]+\.apps\.googleusercontent\.com$/, "must look like xxxx.apps.googleusercontent.com")
+      .optional(),
     MONGODB_URI: mongoUri.optional(),
     MONGODB_URI_TEST: mongoUri.optional(),
   })
