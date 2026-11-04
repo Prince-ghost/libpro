@@ -26,6 +26,9 @@ export default function Navbar() {
           <Link href="/books" className="text-sm font-medium hover:text-brand">
             Browse
           </Link>
+          <Link href="/sell" className="text-sm font-medium hover:text-brand">
+            Sell
+          </Link>
         </div>
         <AuthNav />
       </div>

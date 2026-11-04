@@ -31,7 +31,10 @@ export default function AuthNav() {
 
   if (status === "authenticated") {
     return (
-      <nav aria-label="Account" className="flex items-center gap-2 sm:gap-3">
+      <nav aria-label="Account" className="flex flex-wrap items-center gap-2 sm:gap-3">
+        <Link href="/my-listings" className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-surface">
+          My listings
+        </Link>
         <span className="hidden max-w-[10rem] truncate text-sm text-muted sm:inline" title={user.name}>
           {user.name}
         </span>
