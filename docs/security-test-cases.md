@@ -41,3 +41,13 @@ Browser rendering of user-supplied text, end-to-end browser journeys, load testi
 - `npm audit --omit=dev`: 1 high finding in body-parser 2.0.0 to 2.3.0 (denial of service via trailing bytes after a compressed request body, GHSA-27r3-jxmh-p828). Fixed with `npm audit fix` (no `--force`), which only updated a transitive dependency within its allowed range.
 - `npm outdated`: dotenv, express-rate-limit and mongoose each had a newer patch version. Updated with `npm update`.
 - After updating: `npm audit --omit=dev` reported [result] and `npm test` reported [Test Files / Tests].
+
+## Browser tests (frontend/e2e, run with `npm run e2e` in frontend)
+| Scenario or control | Test |
+|---|---|
+| A. Access control | security.spec.js: a normal user gets 401 when logged out and 403 when logged in on `/api/admin/*`, and the admin page shows no access. marketplace.spec.js: the seller sees no buyer phone or email, and the delivery address disappears after cancelling. |
+| D. One copy, one buyer | marketplace.spec.js: a second buyer sees the book as reserved and a hand-made add-to-cart request gets 409. |
+| C. Server-side totals | marketplace.spec.js: the order total (book plus shipping) comes from the server. |
+| F. Sessions and login | auth.spec.js: the session cookie is HttpOnly and SameSite, nothing is in local or session storage, a wrong password and an unknown email give the same message, logout sticks after a refresh, and a disabled account is logged out and refused. |
+| Open redirects | auth.spec.js: `?next=https://evil.example` stays on the site. |
+| G. XSS | security.spec.js: markup in a name, a title and a description is shown as plain text, nothing runs, and no image tag is created, on the account, my listings, detail and edit pages. |

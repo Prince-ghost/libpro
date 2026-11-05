@@ -37,3 +37,14 @@
 - [ ] A second buyer cannot buy the same book
 - [ ] Buyer cancels an order and the book returns to the catalogue
 - [ ] A normal user gets 403 on `/api/admin/*`
+
+## Frontend
+- [ ] `NEXT_PUBLIC_API_URL` is the exact `https://` address of the API, set before `npm run build` (it is baked into the build)
+- [ ] The site and the API share a parent domain (for example `app.example.com` and `api.example.com`), or the login cookie will not be sent
+- [ ] The backend `CLIENT_ORIGIN` is exactly the site's `https://` address
+- [ ] `npm run build` succeeds from a clean install, and `npm audit --omit=dev` has no unexplained findings
+- [ ] `NEXT_PUBLIC_` variables contain nothing secret (the Google Client ID is public by design)
+- [ ] The demo books are gone: `npm run seed-demo -- --remove` against the live database, or never seed it
+- [ ] If Google sign-in is used: the live `https://` site address is added under Authorized JavaScript origins, and the consent screen is published (it only allows listed test users while in Testing)
+- [ ] `npm run e2e` passes against a staging copy before launch
+- [ ] Walk through the staging checklist above on the real staging site, from a phone as well as a computer
