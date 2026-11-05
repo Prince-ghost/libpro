@@ -46,9 +46,16 @@ export function AuthProvider({ children }) {
     setState({ status: "anonymous", user: null });
   }, []);
 
+  // After the server confirms a change (for example a new name), the screen shows it straight away.
+  const updateUser = useCallback((changes) => {
+    setState((prev) =>
+      prev.status === "authenticated" ? { ...prev, user: { ...prev.user, ...changes } } : prev
+    );
+  }, []);
+
   const value = useMemo(
-    () => ({ ...state, login, loginWithGoogle, register, logout }),
-    [state, login, loginWithGoogle, register, logout]
+    () => ({ ...state, login, loginWithGoogle, register, logout, updateUser }),
+    [state, login, loginWithGoogle, register, logout, updateUser]
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

@@ -38,12 +38,6 @@ export default function AuthNav() {
     const wishCount = wishlist.loaded ? wishlist.count : 0;
     return (
       <nav aria-label="Account" className="flex flex-wrap items-center gap-1 sm:gap-2">
-        <Link href="/my-listings" className={LINK}>
-          My listings
-        </Link>
-        <Link href="/orders" className={LINK}>
-          Orders
-        </Link>
         <Link
           href="/wishlist"
           className={LINK}
@@ -58,9 +52,14 @@ export default function AuthNav() {
         >
           Cart{cartCount > 0 ? ` (${cartCount})` : ""}
         </Link>
-        <span className="hidden max-w-[10rem] truncate text-sm text-muted xl:inline" title={user.name}>
-          {user.name}
-        </span>
+        <Link href="/account" className={LINK} title={user.name}>
+          Account
+        </Link>
+        {user.role === "admin" && (
+          <Link href="/admin" className={LINK}>
+            Admin
+          </Link>
+        )}
         <button
           type="button"
           onClick={onLogout}
