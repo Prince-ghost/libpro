@@ -5,7 +5,7 @@ import Link from "next/link";
 import { api } from "@/lib/api";
 import { AUDIENCE_LABELS, CONDITION_LABELS, formatDate, formatPrice } from "@/lib/format";
 import Alert from "@/components/ui/Alert";
-import BookCover from "@/components/books/BookCover";
+import BookGallery from "@/components/books/BookGallery";
 import CartActions from "@/components/shop/CartActions";
 import WishlistButton from "@/components/shop/WishlistButton";
 
@@ -119,7 +119,7 @@ export default function BookDetail({ id }) {
       )}
 
       <div className="mt-6 grid gap-8 md:grid-cols-[minmax(0,18rem)_1fr]">
-        <BookCover book={book} size="large" />
+        <BookGallery book={book} />
 
         <div className="min-w-0">
           <h1 className="break-words font-serif text-3xl font-bold leading-tight">{book.title}</h1>

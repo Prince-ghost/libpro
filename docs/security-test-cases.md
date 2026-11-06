@@ -51,3 +51,15 @@ Browser rendering of user-supplied text, end-to-end browser journeys, load testi
 | F. Sessions and login | auth.spec.js: the session cookie is HttpOnly and SameSite, nothing is in local or session storage, a wrong password and an unknown email give the same message, logout sticks after a refresh, and a disabled account is logged out and refused. |
 | Open redirects | auth.spec.js: `?next=https://evil.example` stays on the site. |
 | G. XSS | security.spec.js: markup in a name, a title and a description is shown as plain text, nothing runs, and no image tag is created, on the account, my listings, detail and edit pages. |
+
+## Photo uploads (backend/tests/integration/images.test.js, frontend/e2e/photos.spec.js)
+| Control | Test |
+|---|---|
+| Content check, not trust | SVG, text renamed to .jpg, GIF, tiny images and a pixel bomb are refused. Only JPEG, PNG and WebP are re-encoded and stored. |
+| Size limits | More than 5 MB gets 413. Photos are shrunk to 1200 px. |
+| Hidden data | Copyright and location metadata do not survive re-encoding. |
+| Ownership | Someone else's photo, a photo already on another listing and an unknown id are all refused, and nothing is changed. |
+| Access | Pending and unattached photos give 404 to everyone except the owner and admins (backend and browser tests). |
+| Safe serving | Photos are served only as WebP we created, with `nosniff`. |
+| Abuse limits | 20 unused uploads per person, 60 uploads an hour per address. |
+| Orphan cleanup | Unused uploads expire after 24 hours (expiry index tested). Removed and archived listings delete their photos. |

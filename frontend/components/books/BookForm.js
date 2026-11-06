@@ -7,6 +7,7 @@ import Alert from "@/components/ui/Alert";
 import FormField from "@/components/ui/FormField";
 import SelectField from "@/components/ui/SelectField";
 import TextAreaField from "@/components/ui/TextAreaField";
+import PhotoPicker from "@/components/books/PhotoPicker";
 import { AUDIENCE_LABELS, CONDITION_LABELS } from "@/lib/format";
 import { fieldErrorsFrom, focusFirstError } from "@/lib/form-errors";
 import {
@@ -14,6 +15,7 @@ import {
   FIELD_ORDER,
   buildCreatePayload,
   buildPatch,
+  photoFromId,
   validateValues,
   valuesFromBook,
 } from "@/lib/book-form";
@@ -22,6 +24,7 @@ import {
 export default function BookForm({ book = null, onSubmit, submitLabel, busyLabel, cancelHref, notice = "" }) {
   const pathname = usePathname();
   const [values, setValues] = useState(() => valuesFromBook(book));
+  const [photos, setPhotos] = useState(() => (book?.images ?? []).map(photoFromId));
   const [errors, setErrors] = useState({});
   const [formError, setFormError] = useState("");
   const [expired, setExpired] = useState(false);
@@ -45,8 +48,17 @@ export default function BookForm({ book = null, onSubmit, submitLabel, busyLabel
       focusFirstError(found, FIELD_ORDER);
       return;
     }
+    if (photos.some((p) => p.status === "uploading")) {
+      setFormError("Please wait for your photos to finish uploading.");
+      return;
+    }
+    if (photos.some((p) => p.status === "error")) {
+      setFormError("Remove the photos that failed to upload, then try again.");
+      return;
+    }
 
-    const payload = book ? buildPatch(values, book) : buildCreatePayload(values);
+    const imageIds = photos.map((p) => p.id);
+    const payload = book ? buildPatch(values, book, imageIds) : buildCreatePayload(values, imageIds);
     if (book && Object.keys(payload).length === 0) {
       setFormError("You have not changed anything yet.");
       return;
@@ -64,6 +76,10 @@ export default function BookForm({ book = null, onSubmit, submitLabel, busyLabel
         if (fields.priceMinor) {
           fields.price = fields.priceMinor; // the API calls the price priceMinor
           delete fields.priceMinor;
+        }
+        if (fields.imageKeys) {
+          fields.photos = fields.imageKeys; // and the photos imageKeys
+          delete fields.imageKeys;
         }
         setErrors(fields);
         setFormError(
@@ -197,6 +213,8 @@ export default function BookForm({ book = null, onSubmit, submitLabel, busyLabel
         onChange={onChange}
         error={errors.description}
       />
+
+      <PhotoPicker photos={photos} setPhotos={setPhotos} error={errors.photos} />
 
       <div className="flex flex-wrap gap-3 pt-2">
         <button

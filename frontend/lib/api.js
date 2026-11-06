@@ -13,14 +13,18 @@ export class ApiError extends Error {
 }
 
 export async function api(path, { method = "GET", body, signal, headers } = {}) {
+  // A file upload is sent as a form. The browser adds the right content type for it by itself.
+  const isForm = typeof FormData !== "undefined" && body instanceof FormData;
+  const allHeaders = { ...(body && !isForm ? { "Content-Type": "application/json" } : {}), ...headers };
+
   let res;
   try {
     res = await fetch(`${API_URL}${path}`, {
       method,
       credentials: "include", // sends the HttpOnly login cookie
       cache: "no-store",
-      headers: body || headers ? { ...(body ? { "Content-Type": "application/json" } : {}), ...headers } : undefined,
-      body: body ? JSON.stringify(body) : undefined,
+      headers: Object.keys(allHeaders).length > 0 ? allHeaders : undefined,
+      body: body ? (isForm ? body : JSON.stringify(body)) : undefined,
       signal,
     });
   } catch (err) {

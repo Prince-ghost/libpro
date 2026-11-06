@@ -95,3 +95,12 @@ In `backend/`, with your `.env` in place and the person already registered:
 It prints the database it used. It refuses to remove the last admin. Both actions are written to the audit log with `source: "cli"`.
 
 | POST | /api/auth/google | public, rate-limited | Body `{ credential }` (Google ID token) only. Verified server-side (signature, audience, expiry, verified email). Creates the account or signs in, sets the same cookie as login. If the email matches a password account, the account is linked, the old password stops working and old sessions end. 400, 401 `INVALID_GOOGLE_TOKEN` / `SIGNIN_FAILED`, 503 `GOOGLE_NOT_CONFIGURED`. |
+
+## Photos (login required to upload)
+| Method | Path | Notes |
+|---|---|---|
+| POST | /api/images | Multipart form with one file in the field `file` (JPEG, PNG or WebP, up to 5 MB, at least 100 px). Re-encoded to WebP (max 1200 px) with a 400 px thumbnail, metadata removed. 201 `{ id, width, height }`. 400 `INVALID_IMAGE`, 415 `UNSUPPORTED_IMAGE_TYPE`, 413 `FILE_TOO_LARGE`, 409 `TOO_MANY_PENDING_IMAGES` (max 20 unused), 429. Unused uploads delete themselves after 24 hours. |
+| GET | /api/images/:id?size=full\|thumb | Visible to everyone if the listing is approved, otherwise only to the uploader and admins. Others get 404. |
+| DELETE | /api/images/:id | Uploader only, and only for a photo not on a listing. 409 `IMAGE_IN_USE` otherwise. |
+
+Listings: `imageKeys` (up to 5 photo ids, cover first) can be sent on `POST /api/books` and `PATCH /api/books/:id`. Sending the list replaces it; leaving it out changes nothing. Photos must belong to the seller. Dropped photos are deleted, and archiving a listing deletes its photos. Listing responses include `images`, the photo ids in order.

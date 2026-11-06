@@ -1,5 +1,10 @@
-// Photos are not available yet, so each book gets a generated cover from its title and author.
-// It is decoration only (hidden from screen readers); the real text is next to it.
+"use client";
+
+import { useState } from "react";
+import { imageUrl } from "@/lib/images";
+
+// Shows the seller's cover photo. If a book has no photo, or the photo cannot be loaded, a cover is
+// generated from the title and author. The generated one is decoration only (hidden from screen readers).
 const PALETTE = [
   "bg-emerald-100 text-emerald-900",
   "bg-amber-100 text-amber-900",
@@ -17,6 +22,24 @@ function colourFor(id) {
 
 export default function BookCover({ book, size = "card" }) {
   const large = size === "large";
+  const coverId = book.images?.[0];
+  const [failedId, setFailedId] = useState("");
+
+  if (coverId && failedId !== coverId) {
+    return (
+      <div className={`aspect-[3/4] w-full overflow-hidden rounded-lg border border-line bg-paper ${large ? "max-w-xs" : ""}`}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={imageUrl(coverId, "thumb")}
+          alt=""
+          loading="lazy"
+          onError={() => setFailedId(coverId)}
+          className="h-full w-full object-cover"
+        />
+      </div>
+    );
+  }
+
   return (
     <div
       aria-hidden="true"

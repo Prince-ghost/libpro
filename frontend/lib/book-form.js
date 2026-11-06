@@ -11,6 +11,7 @@ export const FIELD_ORDER = [
   "edition",
   "price",
   "description",
+  "photos",
 ];
 
 export const CATEGORY_SUGGESTIONS = [
@@ -55,6 +56,11 @@ export function valuesFromBook(book) {
   };
 }
 
+// A photo that is already on the listing being edited.
+export function photoFromId(id) {
+  return { key: id, id, status: "ready", name: "Photo", preview: "", existing: true, error: "" };
+}
+
 export function validateValues(values) {
   const errors = {};
 
@@ -77,7 +83,7 @@ export function validateValues(values) {
 }
 
 // For a new listing: only the allowed fields are sent, and blank optional ones are left out.
-export function buildCreatePayload(values) {
+export function buildCreatePayload(values, imageIds = []) {
   const payload = {
     title: trimmed(values.title),
     author: trimmed(values.author),
@@ -90,11 +96,12 @@ export function buildCreatePayload(values) {
     const text = trimmed(values[key]);
     if (text) payload[key] = text;
   }
+  if (imageIds.length > 0) payload.imageKeys = imageIds;
   return payload;
 }
 
 // For an edit: only what actually changed. An empty object means nothing changed.
-export function buildPatch(values, book) {
+export function buildPatch(values, book, imageIds = book.images ?? []) {
   const patch = {};
   for (const key of SENT_AS_TEXT) {
     const next = trimmed(values[key]);
@@ -102,5 +109,10 @@ export function buildPatch(values, book) {
   }
   const paise = parsePrice(values.price).paise;
   if (paise !== book.priceMinor) patch.priceMinor = paise;
+
+  const before = book.images ?? [];
+  if (imageIds.length !== before.length || imageIds.some((id, index) => id !== before[index])) {
+    patch.imageKeys = imageIds; // the whole list, in order, with the cover first
+  }
   return patch;
 }

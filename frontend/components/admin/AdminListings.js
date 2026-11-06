@@ -1,5 +1,7 @@
 "use client";
 
+
+import { imageUrl } from "@/lib/images";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -165,6 +167,7 @@ export default function AdminListings() {
                 </div>
 
                 {rejecting && (
+                  
                   <form
                     onSubmit={(event) => submitReject(event, book)}
                     noValidate
