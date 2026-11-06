@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { AppError } from "../lib/http.js";
-import { Book, User } from "../models/index.js";
+import { runInTransaction } from "../lib/db.js";
+import { Book, Image, User } from "../models/index.js";
 
 const SORT_ORDER = {
   newest: { createdAt: -1, _id: -1 },
@@ -28,6 +29,7 @@ export function toDto(book, sellerName, { includePrivate = false } = {}) {
     status: book.status,
     createdAt: book.createdAt,
     seller: { name: sellerName ?? "BookBack user" },
+    images: (book.imageKeys ?? []).map(String), // photo ids, cover first
   };
   if (includePrivate) {
     dto.moderationState = book.moderationState;
@@ -39,7 +41,7 @@ export function toDto(book, sellerName, { includePrivate = false } = {}) {
 const canManage = (book, actor) =>
   Boolean(actor) && (actor.role === "admin" || String(book.sellerId) === actor.id);
 
-export async function sellerNameOf(sellerId) {
+async function sellerNameOf(sellerId) {
   const user = await User.findById(sellerId).select("name").lean();
   return user?.name;
 }
@@ -70,9 +72,7 @@ function buildPublicFilter(p) {
   if (p.q) {
     const pattern = escapeRegex(p.q);
     const matches = (field) => ({ [field]: mongoose.trusted({ $regex: pattern, $options: "i" }) });
-    filter.$or = mongoose.trusted(
-      ["title", "author", "classOrCourse", "category"].map(matches)
-    );
+    filter.$or = mongoose.trusted(["title", "author", "classOrCourse", "category"].map(matches));
   }
   return filter;
 }
@@ -124,9 +124,38 @@ export async function getBook(id, actor) {
   return toDto(book, await sellerNameOf(book.sellerId), { includePrivate: manages });
 }
 
+// Puts the given photos on a listing. Each must belong to the seller and be free, or already be on this
+// same listing. If even one is not usable, nothing is changed. Attaching removes the expiry timer.
+async function attachImages({ ownerId, ids, bookId, session }) {
+  const usable = () => ({
+    _id: mongoose.trusted({ $in: ids }),
+    ownerId,
+    $or: mongoose.trusted([{ bookId: null }, { bookId }]),
+  });
+  const count = await Image.countDocuments(usable()).session(session);
+  if (count !== ids.length) {
+    throw new AppError(400, "VALIDATION_ERROR", "Some photos are not available. Please upload them again.", [
+      { field: "imageKeys", issue: "Some photos are not available" },
+    ]);
+  }
+  await Image.updateMany(usable(), { $set: { bookId }, $unset: { expireAt: 1 } }, { session });
+}
+
 export async function createBook(actor, input) {
-  // sellerId comes last and from the session, so nothing in the input can override it.
-  const book = await Book.create({ ...input, sellerId: actor.id });
+  const { imageKeys = [], ...fields } = input;
+
+  if (imageKeys.length === 0) {
+    // sellerId comes last and from the session, so nothing in the input can override it.
+    const book = await Book.create({ ...fields, sellerId: actor.id });
+    return toDto(book, actor.name, { includePrivate: true });
+  }
+
+  // The listing and its photos are saved together or not at all.
+  const book = await runInTransaction(async (session) => {
+    const [created] = await Book.create([{ ...fields, sellerId: actor.id, imageKeys }], { session });
+    await attachImages({ ownerId: actor.id, ids: imageKeys, bookId: created._id, session });
+    return created;
+  });
   return toDto(book, actor.name, { includePrivate: true });
 }
 
@@ -135,16 +164,36 @@ export async function updateBook(id, actor, input) {
   if (!book || !canManage(book, actor)) throw notFound();
   if (book.status !== "active") throw locked();
 
-  const update = { ...input };
+  const { imageKeys, ...fields } = input;
+  const update = { ...fields };
   // A seller's edit goes back to moderation; an admin's edit keeps the current state.
   if (String(book.sellerId) === actor.id) update.moderationState = "pending";
+  if (imageKeys !== undefined) update.imageKeys = imageKeys;
 
-  // Conditional write: if the listing stopped being active meanwhile, nothing is changed.
-  const updated = await Book.findOneAndUpdate(
-    { _id: id, status: "active" },
-    { $set: update },
-    { new: true, runValidators: true }
-  );
+  // Photo changes need several writes, so they run as one transaction. Photos always have to belong to the
+  // listing's seller, so an admin can remove or reorder photos but can never attach their own.
+  const run = imageKeys === undefined ? (work) => work(undefined) : runInTransaction;
+  const updated = await run(async (session) => {
+    // Conditional write: if the listing stopped being active meanwhile, nothing is changed.
+    const doc = await Book.findOneAndUpdate(
+      { _id: id, status: "active" },
+      { $set: update },
+      { returnDocument: "after", runValidators: true, session }
+    );
+    if (!doc) return null;
+
+    if (imageKeys !== undefined) {
+      if (imageKeys.length > 0) {
+        await attachImages({ ownerId: book.sellerId, ids: imageKeys, bookId: book._id, session });
+      }
+      const keep = new Set(imageKeys);
+      const removed = (book.imageKeys ?? []).filter((key) => !keep.has(key));
+      if (removed.length > 0) {
+        await Image.deleteMany({ _id: mongoose.trusted({ $in: removed }), bookId: book._id }, { session });
+      }
+    }
+    return doc;
+  });
   if (!updated) throw locked();
   return toDto(updated, await sellerNameOf(updated.sellerId), { includePrivate: true });
 }
@@ -155,7 +204,16 @@ export async function archiveBook(id, actor) {
   if (book.status === "archived") return { id: String(book._id), status: "archived" };
   if (book.status !== "active") throw locked();
 
-  const result = await Book.updateOne({ _id: id, status: "active" }, { $set: { status: "archived" } });
-  if (result.modifiedCount === 0) throw locked();
+  const archived = await runInTransaction(async (session) => {
+    const result = await Book.updateOne(
+      { _id: id, status: "active" },
+      { $set: { status: "archived", imageKeys: [] } },
+      { session }
+    );
+    if (result.modifiedCount === 0) return false;
+    await Image.deleteMany({ bookId: book._id }, { session }); // free the storage the photos used
+    return true;
+  });
+  if (!archived) throw locked();
   return { id: String(book._id), status: "archived" };
 }

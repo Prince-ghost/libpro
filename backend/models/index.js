@@ -6,5 +6,6 @@ import Wishlist from "./Wishlist.js";
 import Address from "./Address.js";
 import Order from "./Order.js";
 import AuditEvent from "./AuditEvent.js";
+import Image from "./Image.js";
 
-export { User, Book, Session, Cart, Wishlist, Address, Order, AuditEvent };
+export { User, Book, Session, Cart, Wishlist, Address, Order, AuditEvent, Image };

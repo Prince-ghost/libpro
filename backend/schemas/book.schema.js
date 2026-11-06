@@ -4,10 +4,22 @@ import { z } from "zod";
 export const AUDIENCES = ["school", "college", "competitive", "reference", "other"];
 export const CONDITIONS = ["like_new", "good", "fair", "poor"];
 export const SORT_KEYS = ["newest", "price_asc", "price_desc"];
+export const MAX_IMAGES = 5;
 
 const required = (label, max) =>
   z.string().trim().min(1, `${label} is required`).max(max, `${label} must be at most ${max} characters`);
 const optional = (max) => z.string().trim().max(max, `Must be at most ${max} characters`).optional();
+
+// Photo ids come from POST /api/images. The service checks that each one belongs to the seller.
+const imageKeys = z
+  .array(
+    z
+      .string()
+      .regex(/^[a-f\d]{24}$/i, "Invalid photo id")
+      .transform((value) => value.toLowerCase())
+  )
+  .max(MAX_IMAGES, `At most ${MAX_IMAGES} photos`)
+  .refine((list) => new Set(list).size === list.length, "Each photo can only be used once");
 
 // No defaults here on purpose: this schema is reused (as .partial()) for edits,
 // and a default would silently overwrite fields the client did not send.
@@ -26,6 +38,7 @@ export const createBookSchema = z.object({
     .int("Price must be a whole number of paise")
     .min(1, "Price must be at least 1 paisa")
     .max(10000000, "Price is too high"),
+  imageKeys: imageKeys.optional(),
 });
 
 export const updateBookSchema = createBookSchema
