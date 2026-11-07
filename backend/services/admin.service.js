@@ -30,7 +30,7 @@ function toAdminBookDto(book, sellerName) {
     status: book.status,
     moderationState: book.moderationState,
     seller: { id: String(book.sellerId), name: sellerName ?? null },
-    images: (book.imageKeys ?? []).map(string),
+    images: (book.imageKeys ?? []).map(String),
     createdAt: book.createdAt,
     updatedAt: book.updatedAt,
   };

@@ -1,7 +1,5 @@
 "use client";
 
-
-import { imageUrl } from "@/lib/images";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -9,6 +7,7 @@ import { api } from "@/lib/api";
 import { useApiList } from "@/lib/use-api-list";
 import { buildHref, readChoice, readPage } from "@/lib/url-params";
 import { MODERATION } from "@/lib/admin-labels";
+import { imageUrl } from "@/lib/images";
 import { AUDIENCE_LABELS, CONDITION_LABELS, formatPrice } from "@/lib/format";
 import { formatDateTime } from "@/lib/datetime";
 import Alert from "@/components/ui/Alert";
@@ -166,8 +165,25 @@ export default function AdminListings() {
                   </div>
                 </div>
 
+                {book.images?.length > 0 && (
+                  <ul aria-label="Photos" className="mt-3 flex flex-wrap gap-2">
+                    {book.images.map((imageId, index) => (
+                      <li key={imageId}>
+                        <a href={imageUrl(imageId)} target="_blank" rel="noopener noreferrer">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={imageUrl(imageId, "thumb")}
+                            alt={`Photo ${index + 1} of ${book.title}`}``
+                            loading="lazy"
+                            className="h-24 w-20 rounded-lg border border-line object-cover"
+                          />
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
                 {rejecting && (
-                  
                   <form
                     onSubmit={(event) => submitReject(event, book)}
                     noValidate
