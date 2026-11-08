@@ -171,9 +171,9 @@ export default function AdminListings() {
                       <li key={imageId}>
                         <a href={imageUrl(imageId)} target="_blank" rel="noopener noreferrer">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
+                                                   <img
                             src={imageUrl(imageId, "thumb")}
-                            alt={`Photo ${index + 1} of ${book.title}`}``
+                            alt={`Photo ${index + 1} of ${book.title}`}
                             loading="lazy"
                             className="h-24 w-20 rounded-lg border border-line object-cover"
                           />
