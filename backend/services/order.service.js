@@ -38,7 +38,7 @@ export function toOrderDto(order) {
     paymentStatus: order.paymentStatus,
     cancellable: isCancellable(order),
     timeline: timelineOf(order),
-        items: order.items.map((i) => ({
+      items: order.items.map((i) => ({
       bookId: String(i.bookId),
       title: i.title,
       author: i.author ?? null,

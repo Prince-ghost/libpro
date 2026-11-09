@@ -5,7 +5,7 @@ import Link from "next/link";
 import { api } from "@/lib/api";
 import { formatPrice } from "@/lib/format";
 import { formatDateTime } from "@/lib/datetime";
-import { ORDER_STATUS, PAYMENT_STATUS, countryName } from "@/lib/order-labels";
+import { FULFILMENT, ORDER_STATUS, PAYMENT_STATUS, countryName, sellerStatusOf } from "@/lib/order-labels";
 import Alert from "@/components/ui/Alert";
 
 const ID_RE = /^[a-f\d]{24}$/i;
@@ -29,6 +29,10 @@ export default function SaleDetail({ id }) {
   const [attempt, setAttempt] = useState(0);
   const requestKey = `${id}#${attempt}`;
   const [result, setResult] = useState({ key: "", order: null, error: null });
+  const [confirming, setConfirming] = useState(false);
+  const [shipping, setShipping] = useState(false);
+  const [shipError, setShipError] = useState("");
+  const [notice, setNotice] = useState("");
 
   useEffect(() => {
     if (!validId) return;
@@ -68,15 +72,39 @@ export default function SaleDetail({ id }) {
   }
 
   const order = result.order;
-  const status = ORDER_STATUS[order.status] ?? { label: order.status, style: FALLBACK };
+  const cancelled = order.status === "cancelled";
+  const status = sellerStatusOf(order);
   const payment = PAYMENT_STATUS[order.paymentStatus] ?? { label: order.paymentStatus, style: FALLBACK };
   const ship = order.shipTo;
+  const allReceived = order.items.every((item) => item.fulfilment === "delivered");
+
+  async function markShipped() {
+    if (shipping) return;
+    setShipping(true);
+    setShipError("");
+    try {
+      const { data } = await api(`/api/seller/orders/${encodeURIComponent(order.id)}/ship`, { method: "POST" });
+      setResult((r) => ({ ...r, order: data }));
+      setConfirming(false);
+      setNotice("Marked as shipped. The buyer can now confirm when it arrives.");
+    } catch (err) {
+      setShipError(err?.message ?? "Could not mark the order as shipped. Please try again.");
+    } finally {
+      setShipping(false);
+    }
+  }
 
   return (
     <article>
       <Link href="/sales" className="text-sm font-medium text-brand underline">
         ← All orders for my books
       </Link>
+
+      {notice && (
+        <div className="mt-4">
+          <Alert tone="info">{notice}</Alert>
+        </div>
+      )}
 
       <div className="mt-4 flex flex-wrap items-start justify-between gap-3">
         <div>
@@ -97,7 +125,7 @@ export default function SaleDetail({ id }) {
 
       <p className="mt-4 rounded-xl border border-line bg-paper px-4 py-3 text-sm text-muted">
         You can only see your own books in this order and the delivery name and address, not the buyer&apos;s contact
-        details. Online payment and shipping updates are not available yet.
+        details. BookBack does not take online payments yet.
       </p>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_20rem]">
@@ -107,15 +135,34 @@ export default function SaleDetail({ id }) {
               Your books in this order
             </h3>
             <ul className="mt-3 space-y-3">
-              {order.items.map((item) => (
-                <li key={item.bookId} className="flex justify-between gap-4 rounded-2xl border border-line bg-surface p-4">
-                  <div className="min-w-0">
-                    <p className="break-words font-serif text-lg font-bold leading-snug">{item.title}</p>
-                    {item.author && <p className="break-words text-sm text-muted">by {item.author}</p>}
-                  </div>
-                  <p className="shrink-0 font-bold text-brand-dark">{formatPrice(item.unitPriceMinor)}</p>
-                </li>
-              ))}
+              {order.items.map((item) => {
+                const state = item.fulfilment ?? "pending";
+                const fulfil = FULFILMENT[state] ?? { label: state, style: FALLBACK };
+                return (
+                  <li key={item.bookId} className="rounded-2xl border border-line bg-surface p-4">
+                    <div className="flex justify-between gap-4">
+                      <div className="min-w-0">
+                        <p className="break-words font-serif text-lg font-bold leading-snug">{item.title}</p>
+                        {item.author && <p className="break-words text-sm text-muted">by {item.author}</p>}
+                      </div>
+                      <p className="shrink-0 font-bold text-brand-dark">{formatPrice(item.unitPriceMinor)}</p>
+                    </div>
+                    {!cancelled && (
+                      <p className="mt-2 flex flex-wrap items-center gap-2 text-sm">
+                        <span className={`inline-block rounded-full border px-3 py-1 font-medium ${fulfil.style}`}>
+                          {fulfil.label}
+                        </span>
+                        {state === "shipped" && item.shippedAt && (
+                          <span className="text-muted">Shipped {formatDateTime(item.shippedAt)}</span>
+                        )}
+                        {state === "delivered" && item.deliveredAt && (
+                          <span className="text-muted">Received {formatDateTime(item.deliveredAt)}</span>
+                        )}
+                      </p>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
             <p className="mt-3 flex justify-between gap-3 font-bold">
               <span>Total for your books</span>
@@ -138,24 +185,84 @@ export default function SaleDetail({ id }) {
           </section>
         </div>
 
-        <aside aria-labelledby="sale-ship-heading" className="h-fit rounded-2xl border border-line bg-surface p-5">
-          <h3 id="sale-ship-heading" className="font-serif text-xl font-bold">
-            Deliver to
-          </h3>
-          {ship ? (
-            <div className="mt-3 text-sm leading-relaxed">
-              <span className="block break-words font-medium">{ship.recipientName}</span>
-              <span className="block break-words">{ship.line1}</span>
-              {ship.line2 && <span className="block break-words">{ship.line2}</span>}
-              <span className="block break-words">
-                {ship.city}, {ship.state} {ship.postalCode}
-              </span>
-              <span className="block">{countryName(ship.country)}</span>
-            </div>
-          ) : (
-            <p className="mt-3 text-sm text-muted">
-              The delivery address is hidden because this order was cancelled. There is nothing to ship.
-            </p>
+        <aside className="space-y-4">
+          <section aria-labelledby="sale-ship-heading" className="rounded-2xl border border-line bg-surface p-5">
+            <h3 id="sale-ship-heading" className="font-serif text-xl font-bold">
+              Deliver to
+            </h3>
+            {ship ? (
+              <div className="mt-3 text-sm leading-relaxed">
+                <span className="block break-words font-medium">{ship.recipientName}</span>
+                <span className="block break-words">{ship.line1}</span>
+                {ship.line2 && <span className="block break-words">{ship.line2}</span>}
+                <span className="block break-words">
+                  {ship.city}, {ship.state} {ship.postalCode}
+                </span>
+                <span className="block">{countryName(ship.country)}</span>
+              </div>
+            ) : (
+              <p className="mt-3 text-sm text-muted">
+                The delivery address is hidden because this order was cancelled. There is nothing to ship.
+              </p>
+            )}
+          </section>
+
+          {!cancelled && (
+            <section aria-labelledby="sale-action-heading" className="rounded-2xl border border-line bg-surface p-5">
+              <h3 id="sale-action-heading" className="font-serif text-xl font-bold">
+                Shipping
+              </h3>
+              {order.canShip ? (
+                confirming ? (
+                  <div role="group" aria-label="Confirm shipping" className="mt-3">
+                    <p className="text-sm">
+                      Mark your books in this order as shipped? There is no online payment yet, so only ship if you are
+                      happy to be paid when the book arrives.
+                    </p>
+                    {shipError && (
+                      <p role="alert" className="mt-2 text-sm text-danger">
+                        {shipError}
+                      </p>
+                    )}
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={markShipped}
+                        disabled={shipping}
+                        className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+                      >
+                        {shipping ? "Saving…" : "Yes, mark as shipped"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirming(false)}
+                        disabled={shipping}
+                        className="rounded-lg border border-line px-4 py-2 text-sm font-medium hover:bg-paper disabled:opacity-60"
+                      >
+                        Not yet
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShipError("");
+                      setConfirming(true);
+                    }}
+                    className={`mt-3 ${BUTTON}`}
+                  >
+                    Mark as shipped
+                  </button>
+                )
+              ) : (
+                <p className="mt-3 text-sm text-muted">
+                  {allReceived
+                    ? "The buyer has received your books."
+                    : "Your books in this order are marked as shipped. The buyer will confirm when they arrive."}
+                </p>
+              )}
+            </section>
           )}
         </aside>
       </div>

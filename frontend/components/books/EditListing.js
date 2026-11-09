@@ -111,6 +111,7 @@ export default function EditListing({ id }) {
       cancelHref="/my-listings"
       notice={`${NOTICE_TEXT[book.moderationState] ?? ""}${
         book.moderationState === "rejected" && book.moderationNote ? ` Reason given: ${book.moderationNote}` : ""
-      }`}    />
+      }`}   
+      />
   );
 }
