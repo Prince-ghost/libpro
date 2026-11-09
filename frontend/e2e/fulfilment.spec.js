@@ -51,7 +51,7 @@ test("the seller marks the order as shipped", async () => {
 
   await page.getByRole("button", { name: "Mark as shipped" }).click();
   await page.getByRole("button", { name: "Yes, mark as shipped" }).click();
-  await expect(page.getByText("Marked as shipped.")).toBeVisible();
+  await expect(page.getByText("Marked as shipped. The buyer can now confirm when it arrives.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Mark as shipped" })).toHaveCount(0);
   await expect(page.getByText("Shipped", { exact: true }).first()).toBeVisible();
 });

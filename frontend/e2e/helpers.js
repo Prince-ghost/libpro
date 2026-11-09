@@ -37,16 +37,26 @@ export async function createAccount(label, name) {
   return { email, name };
 }
 
-// Uses the real command-line tool, pointed at the test database.
+// Uses the real command-line tool, pointed at the test database. It retries on connection problems,
+// but never retries the safety check that it ran on a test database.
 export async function promoteToAdmin(email) {
-  const { stdout } = await run(process.execPath, ["scripts/make-admin.js", email], {
-    cwd: path.resolve(process.cwd(), "../backend"),
-    env: { ...process.env, NODE_ENV: "test" },
-    timeout: 180_000,
-  });
-  if (!/_test/.test(stdout)) throw new Error("make-admin did not run on a test database.");
+  let lastError;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const { stdout } = await run(process.execPath, ["scripts/make-admin.js", email], {
+        cwd: path.resolve(process.cwd(), "../backend"),
+        env: { ...process.env, NODE_ENV: "test" },
+        timeout: 180_000,
+      });
+      if (!/_test/.test(stdout)) throw new Error("make-admin did not run on a test database.");
+      return;
+    } catch (err) {
+      lastError = err;
+      if (/did not run on a test database/.test(String(err?.message))) throw err;
+    }
+  }
+  throw lastError;
 }
-
 export async function uiLogin(page, email, password = PASSWORD) {
   await page.goto("/login");
   await page.getByLabel("Email").fill(email);
