@@ -3,6 +3,7 @@ import { requireAuth } from "../lib/auth.js";
 import { parseQuery, parseObjectId } from "../lib/validate.js";
 import { pageQuerySchema } from "../schemas/book.schema.js";
 import * as orders from "../services/order.service.js";
+import * as fulfilment from "../services/fulfilment.service.js";
 
 const router = Router();
 router.use(requireAuth); // any logged-in user may call this; it only ever returns orders they sell on
@@ -19,6 +20,11 @@ router.get("/orders", async (req, res) => {
 router.get("/orders/:id", async (req, res) => {
   const id = parseObjectId(req.params.id);
   send(req, res, await orders.getSellerOrder(req.user, id));
+});
+
+router.post("/orders/:id/ship", async (req, res) => {
+  const id = parseObjectId(req.params.id);
+  send(req, res, await fulfilment.markShipped(req.user, id));
 });
 
 export default router;

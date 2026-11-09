@@ -110,7 +110,7 @@ export async function moderateBook(admin, id, { moderationState: to, reason }) {
     // so an admin can never approve content they did not see.
     const changed = await Book.findOneAndUpdate(
       { _id: id, moderationState: book.moderationState, updatedAt: book.updatedAt },
-      { $set: { moderationState: to } },
+      { $set: { moderationState: to, moderationNote: to === "rejected" ? (reason ?? "") : "" } },
       { returnDocument: "after", session }
     ).lean();
     if (!changed) return null;

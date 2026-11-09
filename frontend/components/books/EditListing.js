@@ -109,7 +109,8 @@ export default function EditListing({ id }) {
       submitLabel="Save changes"
       busyLabel="Saving…"
       cancelHref="/my-listings"
-      notice={NOTICE_TEXT[book.moderationState] ?? ""}
-    />
+      notice={`${NOTICE_TEXT[book.moderationState] ?? ""}${
+        book.moderationState === "rejected" && book.moderationNote ? ` Reason given: ${book.moderationNote}` : ""
+      }`}    />
   );
 }

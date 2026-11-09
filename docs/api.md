@@ -104,3 +104,15 @@ It prints the database it used. It refuses to remove the last admin. Both action
 | DELETE | /api/images/:id | Uploader only, and only for a photo not on a listing. 409 `IMAGE_IN_USE` otherwise. |
 
 Listings: `imageKeys` (up to 5 photo ids, cover first) can be sent on `POST /api/books` and `PATCH /api/books/:id`. Sending the list replaces it; leaving it out changes nothing. Photos must belong to the seller. Dropped photos are deleted, and archiving a listing deletes its photos. Listing responses include `images`, the photo ids in order.
+
+
+## Fulfilment (login required)
+| Method | Path | Notes |
+|---|---|---|
+| POST | /api/seller/orders/:id/ship | A seller on the order marks all of THEIR books in it as shipped. 200 (repeat is safe), 404 if you are not a seller on it, 409 `ORDER_CANCELLED`. |
+| POST | /api/orders/:id/items/:bookId/received | The buyer confirms one book arrived. The book becomes sold, and when every book is received the order becomes delivered. 200 (repeat is safe), 404 (not your order or not in it), 409 `NOT_SHIPPED` / `ORDER_CANCELLED`. |
+
+Each order item has `fulfilment` (`pending`, `shipped` or `delivered`), `shippedAt` and `deliveredAt`. The seller order view adds `canShip`. An order is `placed` until a book ships, `shipped` until every book is received, then `delivered`. A buyer can cancel only while nothing has shipped.
+
+## Rejection reasons
+When an admin rejects a listing, the reason is saved as `moderationNote` and shown (only) to the seller and admins, while the listing stays rejected. It is cleared when the listing is approved or the seller edits it. It is also kept in the audit log.

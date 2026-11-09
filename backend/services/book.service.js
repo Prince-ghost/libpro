@@ -31,9 +31,11 @@ export function toDto(book, sellerName, { includePrivate = false } = {}) {
     seller: { name: sellerName ?? "BookBack user" },
     images: (book.imageKeys ?? []).map(String), // photo ids, cover first
   };
-  if (includePrivate) {
+    if (includePrivate) {
     dto.moderationState = book.moderationState;
     dto.updatedAt = book.updatedAt;
+    // Only the seller and admins ever get the reason, and only while the listing is rejected.
+    if (book.moderationState === "rejected" && book.moderationNote) dto.moderationNote = book.moderationNote;
   }
   return dto;
 }
@@ -167,7 +169,10 @@ export async function updateBook(id, actor, input) {
   const { imageKeys, ...fields } = input;
   const update = { ...fields };
   // A seller's edit goes back to moderation; an admin's edit keeps the current state.
-  if (String(book.sellerId) === actor.id) update.moderationState = "pending";
+  if (String(book.sellerId) === actor.id) {
+    update.moderationState = "pending";
+    update.moderationNote = ""; // the old reason no longer applies once the seller resubmits
+  }
   if (imageKeys !== undefined) update.imageKeys = imageKeys;
 
   // Photo changes need several writes, so they run as one transaction. Photos always have to belong to the

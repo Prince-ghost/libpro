@@ -194,8 +194,7 @@ export default function AdminListings() {
                       label="Why is this listing being rejected?"
                       rows={3}
                       maxLength={500}
-                      hint="At least 3 characters. It is saved in the audit log. Sellers cannot see it yet."
-                      value={reason}
+                      hint="At least 3 characters. The seller will see this reason, so be specific and polite. It is also saved in the audit log."                      value={reason}
                       onChange={(event) => {
                         setReason(event.target.value);
                         setReasonError("");

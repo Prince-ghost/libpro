@@ -6,12 +6,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 import { formatPrice } from "@/lib/format";
 import { formatDateTime } from "@/lib/datetime";
-import { ORDER_STATUS, PAYMENT_STATUS } from "@/lib/order-labels";
+import { FULFILMENT, ORDER_STATUS, PAYMENT_STATUS, orderStatusOf } from "@/lib/order-labels";
 import Alert from "@/components/ui/Alert";
 import AddressText from "@/components/shop/AddressText";
 
 const ID_RE = /^[a-f\d]{24}$/i;
 const BUTTON = "rounded-lg bg-brand px-5 py-2.5 font-medium text-white hover:bg-brand-dark";
+const FALLBACK = "border-line bg-paper text-muted";
 
 function Message({ title, children }) {
   return (
@@ -36,6 +37,10 @@ export default function OrderDetail({ id }) {
   const [confirming, setConfirming] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [cancelError, setCancelError] = useState("");
+  const [confirmingBookId, setConfirmingBookId] = useState("");
+  const [receivingId, setReceivingId] = useState("");
+  const [receiveError, setReceiveError] = useState("");
+  const [notice, setNotice] = useState("");
 
   // Take the one-time flag out of the address, so a refresh does not repeat the message.
   useEffect(() => {
@@ -80,8 +85,9 @@ export default function OrderDetail({ id }) {
   }
 
   const order = result.order;
-  const status = ORDER_STATUS[order.status] ?? { label: order.status, style: "border-line bg-paper text-muted" };
-  const payment = PAYMENT_STATUS[order.paymentStatus] ?? { label: order.paymentStatus, style: "border-line bg-paper text-muted" };
+  const cancelled = order.status === "cancelled";
+  const status = orderStatusOf(order);
+  const payment = PAYMENT_STATUS[order.paymentStatus] ?? { label: order.paymentStatus, style: FALLBACK };
 
   async function cancel() {
     if (cancelling) return;
@@ -98,6 +104,25 @@ export default function OrderDetail({ id }) {
     }
   }
 
+  async function receive(bookId) {
+    if (receivingId) return;
+    setReceivingId(bookId);
+    setReceiveError("");
+    try {
+      const { data } = await api(
+        `/api/orders/${encodeURIComponent(order.id)}/items/${encodeURIComponent(bookId)}/received`,
+        { method: "POST" }
+      );
+      setResult((r) => ({ ...r, order: data }));
+      setConfirmingBookId("");
+      setNotice("Thanks. Marked as received.");
+    } catch (err) {
+      setReceiveError(err?.message ?? "Could not save this. Please try again.");
+    } finally {
+      setReceivingId("");
+    }
+  }
+
   return (
     <article>
       <Link href="/orders" className="text-sm font-medium text-brand underline">
@@ -109,6 +134,11 @@ export default function OrderDetail({ id }) {
           <Alert tone="info">
             Your order was placed. The books are being held for you. No payment has been taken.
           </Alert>
+        </div>
+      )}
+      {notice && (
+        <div className="mt-4">
+          <Alert tone="info">{notice}</Alert>
         </div>
       )}
 
@@ -129,9 +159,10 @@ export default function OrderDetail({ id }) {
         </p>
       </div>
 
-      {order.status === "placed" && order.paymentStatus === "unpaid" && (
+      {!cancelled && (
         <p className="mt-4 rounded-xl border border-line bg-paper px-4 py-3 text-sm text-muted">
-          Online payment is not available yet, so no money has been taken.
+          BookBack does not take online payments yet, so no money has been taken. Only confirm that you received a book
+          once it is in your hands.
         </p>
       )}
 
@@ -142,19 +173,83 @@ export default function OrderDetail({ id }) {
               Books in this order
             </h3>
             <ul className="mt-3 space-y-3">
-              {order.items.map((item) => (
-                <li key={item.bookId} className="flex justify-between gap-4 rounded-2xl border border-line bg-surface p-4">
-                  <div className="min-w-0">
-                    <p className="break-words font-serif text-lg font-bold leading-snug">
-                      <Link href={`/books/${encodeURIComponent(item.bookId)}`} className="hover:text-brand hover:underline">
-                        {item.title}
-                      </Link>
-                    </p>
-                    {item.author && <p className="break-words text-sm text-muted">by {item.author}</p>}
-                  </div>
-                  <p className="shrink-0 font-bold text-brand-dark">{formatPrice(item.unitPriceMinor)}</p>
-                </li>
-              ))}
+              {order.items.map((item) => {
+                const state = item.fulfilment ?? "pending";
+                const fulfil = FULFILMENT[state] ?? { label: state, style: FALLBACK };
+                const canConfirm = !cancelled && state === "shipped";
+                const askingAbout = confirmingBookId === item.bookId;
+                const receiving = receivingId === item.bookId;
+                return (
+                  <li key={item.bookId} className="rounded-2xl border border-line bg-surface p-4">
+                    <div className="flex justify-between gap-4">
+                      <div className="min-w-0">
+                        <p className="break-words font-serif text-lg font-bold leading-snug">
+                          <Link href={`/books/${encodeURIComponent(item.bookId)}`} className="hover:text-brand hover:underline">
+                            {item.title}
+                          </Link>
+                        </p>
+                        {item.author && <p className="break-words text-sm text-muted">by {item.author}</p>}
+                      </div>
+                      <p className="shrink-0 font-bold text-brand-dark">{formatPrice(item.unitPriceMinor)}</p>
+                    </div>
+
+                    {!cancelled && (
+                      <p className="mt-2 flex flex-wrap items-center gap-2 text-sm">
+                        <span className={`inline-block rounded-full border px-3 py-1 font-medium ${fulfil.style}`}>
+                          {fulfil.label}
+                        </span>
+                        {state === "shipped" && item.shippedAt && (
+                          <span className="text-muted">Shipped {formatDateTime(item.shippedAt)}</span>
+                        )}
+                        {state === "delivered" && item.deliveredAt && (
+                          <span className="text-muted">Received {formatDateTime(item.deliveredAt)}</span>
+                        )}
+                      </p>
+                    )}
+
+                    {canConfirm &&
+                      (askingAbout ? (
+                        <div role="group" aria-label="Confirm receipt" className="mt-3 rounded-xl border border-brand/30 bg-brand/5 p-3">
+                          <p className="text-sm">Confirm that this book is in your hands? You cannot undo this.</p>
+                          {receiveError && (
+                            <p role="alert" className="mt-1 text-sm text-danger">
+                              {receiveError}
+                            </p>
+                          )}
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              onClick={() => receive(item.bookId)}
+                              disabled={receiving}
+                              className="rounded-lg bg-brand px-4 py-1.5 text-sm font-medium text-white disabled:opacity-60"
+                            >
+                              {receiving ? "Saving…" : "Yes, I received it"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setConfirmingBookId("")}
+                              disabled={receiving}
+                              className="rounded-lg border border-line px-4 py-1.5 text-sm font-medium hover:bg-paper disabled:opacity-60"
+                            >
+                              Not yet
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setReceiveError("");
+                            setConfirmingBookId(item.bookId);
+                          }}
+                          className="mt-3 rounded-lg border border-line px-4 py-2 text-sm font-medium hover:bg-paper"
+                        >
+                          I have received this book
+                        </button>
+                      ))}
+                  </li>
+                );
+              })}
             </ul>
           </section>
 

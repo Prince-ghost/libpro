@@ -178,7 +178,9 @@ export default function MyListings() {
                       </span>
                     </p>
                     <p className="mt-1 text-sm text-muted">{info.help}</p>
-                  </div>
+                    {book.moderationNote && (
+                      <p className="mt-1 break-words text-sm text-danger">Reason: {book.moderationNote}</p>
+                    )}                  </div>
 
                   <div className="flex shrink-0 flex-wrap gap-2">
                     <Link href={`/books/${encodeURIComponent(book.id)}`} className={SMALL}>

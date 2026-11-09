@@ -93,6 +93,7 @@ export default function BookDetail({ id }) {
     );
   }
   if (book.status === "archived") notices.push("This listing has been removed and is no longer visible to other people.");
+  if (book.moderationState === "rejected" && book.moderationNote) notices.push(`Reason given: ${book.moderationNote}`);
   if (book.status === "sold") notices.push("This book has been sold.");
   if (book.status === "reserved") notices.push("This book is reserved for another buyer.");
 

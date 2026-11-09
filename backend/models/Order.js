@@ -2,8 +2,9 @@ import mongoose from "mongoose";
 
 const integer = { validator: Number.isInteger, message: "must be a whole number" };
 const STATUSES = ["placed", "confirmed", "shipped", "delivered", "cancelled"];
+const FULFILMENT_STATES = ["pending", "shipped", "delivered"];
 
-// Copies of the book as it was at purchase time. No endpoint edits these.
+// Copies of the book as it was at purchase time. Only the fulfilment fields change afterwards.
 const itemSchema = new mongoose.Schema(
   {
     bookId: { type: mongoose.Schema.Types.ObjectId, required: true },
@@ -13,6 +14,10 @@ const itemSchema = new mongoose.Schema(
     unitPriceMinor: { type: Number, required: true, min: 1, validate: integer },
     quantity: { type: Number, default: 1, min: 1, max: 1 },
     imageKey: { type: String, default: null },
+    // Each seller ships their own books, and the buyer confirms each book when it arrives.
+    fulfilment: { type: String, enum: FULFILMENT_STATES, default: "pending" },
+    shippedAt: { type: Date },
+    deliveredAt: { type: Date },
   },
   { _id: false }
 );

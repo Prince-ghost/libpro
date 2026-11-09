@@ -31,6 +31,8 @@ const bookSchema = new mongoose.Schema(
     },
     status: { type: String, enum: ["active", "reserved", "sold", "archived"], default: "active" },
     moderationState: { type: String, enum: ["pending", "approved", "rejected"], default: "pending" },
+        // The reason an admin gave when rejecting the listing. Cleared on approval and when the seller resubmits.
+    moderationNote: { type: String, trim: true, maxlength: 500 },
   },
   { timestamps: true }
 );

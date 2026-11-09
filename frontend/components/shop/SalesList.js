@@ -6,7 +6,7 @@ import { useApiList } from "@/lib/use-api-list";
 import { readPage } from "@/lib/url-params";
 import { formatPrice } from "@/lib/format";
 import { formatDateTime } from "@/lib/datetime";
-import { ORDER_STATUS, PAYMENT_STATUS } from "@/lib/order-labels";
+import { PAYMENT_STATUS, sellerStatusOf } from "@/lib/order-labels";
 import Alert from "@/components/ui/Alert";
 import PageNav from "@/components/ui/PageNav";
 
@@ -65,8 +65,7 @@ export default function SalesList() {
       </p>
       <ul className={`mt-4 space-y-3 ${loading ? "opacity-60" : ""}`}>
         {items.map((order) => {
-          const status = ORDER_STATUS[order.status] ?? { label: order.status, style: FALLBACK };
-          const payment = PAYMENT_STATUS[order.paymentStatus] ?? { label: order.paymentStatus, style: FALLBACK };
+          const status = sellerStatusOf(order);          const payment = PAYMENT_STATUS[order.paymentStatus] ?? { label: order.paymentStatus, style: FALLBACK };
           return (
             <li key={order.id} className="rounded-2xl border border-line bg-surface p-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">

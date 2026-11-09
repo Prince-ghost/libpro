@@ -6,6 +6,7 @@ import { parseBody, parseQuery, parseObjectId } from "../lib/validate.js";
 import { createOrderSchema, idempotencyHeaderSchema } from "../schemas/order.schema.js";
 import { pageQuerySchema } from "../schemas/book.schema.js";
 import * as orders from "../services/order.service.js";
+import * as fulfilment from "../services/fulfilment.service.js";
 
 const router = Router();
 router.use(requireAuth);
@@ -38,6 +39,12 @@ router.get("/:id", async (req, res) => {
 router.post("/:id/cancel", async (req, res) => {
   const id = parseObjectId(req.params.id);
   send(req, res, 200, await orders.cancelOrder(req.user, id));
+});
+
+router.post("/:id/items/:bookId/received", async (req, res) => {
+  const id = parseObjectId(req.params.id);
+  const bookId = parseObjectId(req.params.bookId).toLowerCase();
+  send(req, res, 200, await fulfilment.confirmReceived(req.user, id, bookId));
 });
 
 export default router;

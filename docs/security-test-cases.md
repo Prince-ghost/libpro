@@ -63,3 +63,13 @@ Browser rendering of user-supplied text, end-to-end browser journeys, load testi
 | Safe serving | Photos are served only as WebP we created, with `nosniff`. |
 | Abuse limits | 20 unused uploads per person, 60 uploads an hour per address. |
 | Orphan cleanup | Unused uploads expire after 24 hours (expiry index tested). Removed and archived listings delete their photos. |
+
+
+## Fulfilment and rejection reasons (backend/tests/integration/fulfilment.test.js, moderation-notes.test.js, frontend/e2e/fulfilment.spec.js)
+| Control | Test |
+|---|---|
+| Only the right person acts | Only a seller on the order can ship, and only their own books. Only the buyer can confirm receipt, and the seller cannot. Everyone else gets 404, the same as for a missing order. |
+| No shortcuts | Receipt cannot be confirmed before shipping (409). A cancelled order cannot be shipped. A shipped order cannot be cancelled. |
+| One book, one buyer | A book only becomes sold when the buyer confirms receipt. Two sellers shipping at once is safe, and the order is marked shipped once. |
+| Old data | Orders created before fulfilment existed behave as "not shipped yet". |
+| Reason privacy | A rejection reason reaches only the seller and admins, and never appears in a public listing even if left in the database. |
