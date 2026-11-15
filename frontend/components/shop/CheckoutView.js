@@ -12,6 +12,22 @@ import AddressText from "@/components/shop/AddressText";
 import Alert from "@/components/ui/Alert";
 
 const BUTTON = "rounded-lg bg-brand px-5 py-2.5 font-medium text-white hover:bg-brand-dark";
+let razorpayScript;
+
+function loadRazorpay() {
+  if (typeof window === "undefined") return Promise.reject(new Error("Payment is only available in a browser."));
+  if (window.Razorpay) return Promise.resolve();
+  if (razorpayScript) return razorpayScript;
+  razorpayScript = new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.id = "razorpay-checkout-script";
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = resolve;
+    script.onerror = () => reject(new Error("Could not load the Razorpay payment window."));
+    document.body.appendChild(script);
+  });
+  return razorpayScript;
+}
 
 export default function CheckoutView() {
   const router = useRouter();
@@ -111,6 +127,41 @@ export default function CheckoutView() {
         body: { addressId: chosen },
         headers: { "Idempotency-Key": keyRef.current },
       });
+      const { data: payment } = await api(`/api/orders/${encodeURIComponent(data.id)}/payments/razorpay`, {
+        method: "POST",
+      });
+      if (payment.razorpay) {
+        await loadRazorpay();
+        await new Promise((resolve, reject) => {
+          const checkout = new window.Razorpay({
+            key: payment.razorpay.keyId,
+            amount: payment.razorpay.amount,
+            currency: payment.razorpay.currency,
+            name: payment.razorpay.name,
+            description: payment.razorpay.description,
+            order_id: payment.razorpay.orderId,
+            handler: async (response) => {
+              try {
+                await api(`/api/orders/${encodeURIComponent(data.id)}/payments/razorpay/verify`, {
+                  method: "POST",
+                  body: {
+                    razorpayOrderId: response.razorpay_order_id,
+                    razorpayPaymentId: response.razorpay_payment_id,
+                    razorpaySignature: response.razorpay_signature,
+                  },
+                });
+                resolve();
+              } catch (err) {
+                reject(err);
+              }
+            },
+            modal: { ondismiss: () => reject(new Error("Payment was cancelled. Your order is still unpaid.")) },
+            theme: { color: "#176b57" },
+          });
+          checkout.on("payment.failed", () => reject(new Error("Payment failed. Please try again.")));
+          checkout.open();
+        });
+      }
       setPlacedId(data.id);
       await refreshCart(); // the server emptied the cart
       router.push(`/orders/${encodeURIComponent(data.id)}?placed=1`);
@@ -225,6 +276,10 @@ export default function CheckoutView() {
           Shipping is added and the final total is worked out by BookBack when you place the order. You will see the
           exact amounts on your order page.
         </p>
+        <div className="mt-4 rounded-xl border border-brand/20 bg-brand/5 px-3 py-3 text-sm">
+          <p className="font-medium text-brand-dark">Secure payment with Razorpay</p>
+          <p className="mt-1 text-muted">Pay by UPI, card or net banking after confirming your address.</p>
+        </div>
 
         {error && (
           <div className="mt-4">

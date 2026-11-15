@@ -8,8 +8,18 @@ Error: `{ "error": { "code", "message", "details?", "requestId" } }`
 |---|---|---|---|
 | POST | /api/auth/register | public, rate-limited | 201, 400, 409 |
 | POST | /api/auth/login | public, rate-limited | 200, 401, 429 |
+| POST | /api/auth/forgot-password | public, rate-limited | Always returns 202 with a generic message. Sends a one-hour Resend link when the email belongs to an active account. |
+| POST | /api/auth/reset-password | public, rate-limited | Body `{ token, password }`. Consumes the one-time token, changes the password and ends all existing sessions. |
 | POST | /api/auth/logout | any | always 200 |
 | GET | /api/auth/me | login | 200, 401 |
+
+## Exchanges (login required)
+| Method | Path | Notes |
+|---|---|---|
+| POST | /api/exchanges | Body `{ requestedBookId, message? }`. Sends a request to the book owner. |
+| GET | /api/exchanges/mine | Requests sent by the current user. |
+| GET | /api/exchanges/received | Requests for the current user's books. |
+| PATCH | /api/exchanges/:id | Owner only. Body `{ status: "accepted" \| "rejected" }`. Accepted exchanges are arranged manually. |
 
 ## Books
 | Method | Path | Auth | Notes |

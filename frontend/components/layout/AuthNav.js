@@ -6,7 +6,42 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useShop } from "@/components/shop/ShopProvider";
 
-const LINK = "rounded-lg px-3 py-2 text-sm font-medium hover:bg-surface";
+const LINK = "relative rounded-lg p-2 text-brand hover:bg-surface";
+
+function HeartIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5" aria-hidden="true">
+      <path d="M20.8 8.7c0 5.2-8.8 10.1-8.8 10.1S3.2 13.9 3.2 8.7A4.7 4.7 0 0 1 12 6.2a4.7 4.7 0 0 1 8.8 2.5Z" />
+    </svg>
+  );
+}
+
+function CartIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5" aria-hidden="true">
+      <path d="M3 4h2l2.2 10.2a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 1.9-1.4L21 7H6" />
+      <circle cx="10" cy="19" r="1.2" />
+      <circle cx="18" cy="19" r="1.2" />
+    </svg>
+  );
+}
+
+function UserIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5" aria-hidden="true">
+      <circle cx="12" cy="8" r="3.2" />
+      <path d="M5.5 20a6.5 6.5 0 0 1 13 0" />
+    </svg>
+  );
+}
+
+function LogoutIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5" aria-hidden="true">
+      <path d="M10 5H5v14h5M14 8l4 4-4 4M8 12h10" />
+    </svg>
+  );
+}
 
 export default function AuthNav() {
   const { status, user, logout } = useAuth();
@@ -42,31 +77,55 @@ export default function AuthNav() {
           href="/wishlist"
           className={LINK}
           aria-label={wishCount > 0 ? `Wishlist, ${wishCount} saved` : "Wishlist"}
+          title="Wishlist"
         >
-          Wishlist{wishCount > 0 ? ` (${wishCount})` : ""}
+          <HeartIcon />
+          <span className="sr-only">Wishlist</span>
+          {wishCount > 0 && (
+            <span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-brand px-1 text-center text-[10px] leading-4 text-white">
+              {wishCount}
+            </span>
+          )}
+        </Link>
+        <Link href="/exchanges" className={LINK} title="Exchange requests" aria-label="Exchange requests">
+          <span aria-hidden="true">⇄</span>
+          <span className="sr-only">Exchange requests</span>
         </Link>
         <Link
           href="/cart"
           className={LINK}
           aria-label={cartCount > 0 ? `Cart, ${cartCount} ${cartCount === 1 ? "item" : "items"}` : "Cart"}
+          title="Cart"
         >
-          Cart{cartCount > 0 ? ` (${cartCount})` : ""}
+          <CartIcon />
+          <span className="sr-only">Cart</span>
+          {cartCount > 0 && (
+            <span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-brand px-1 text-center text-[10px] leading-4 text-white">
+              {cartCount}
+            </span>
+          )}
         </Link>
-        <Link href="/account" className={LINK} title={user.name}>
-          Account
+        <Link href="/account" className={`${LINK} flex items-center gap-1`} title={user.name} aria-label={`Account: ${user.name}`}>
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand text-xs font-bold text-white">
+            {user.name?.trim().charAt(0).toUpperCase() || <UserIcon />}
+          </span>
+          <span className="sr-only">Account</span>
         </Link>
         {user.role === "admin" && (
-          <Link href="/admin" className={LINK}>
-            Admin
+          <Link href="/admin" className={LINK} title="Admin" aria-label="Admin">
+            <span aria-hidden="true">▦</span>
+            <span className="sr-only">Admin</span>
           </Link>
         )}
         <button
           type="button"
           onClick={onLogout}
           disabled={busy}
-          className="rounded-lg border border-line px-3 py-2 text-sm font-medium hover:bg-surface disabled:opacity-60"
+          className="rounded-lg border border-line p-2 text-brand hover:bg-surface disabled:opacity-60"
+          title="Log out"
+          aria-label="Log out"
         >
-          {busy ? "Logging out…" : "Log out"}
+          {busy ? <span className="text-xs">…</span> : <LogoutIcon />}
         </button>
         {failed && (
           <span role="alert" className="text-xs text-danger">

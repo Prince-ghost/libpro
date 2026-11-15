@@ -30,6 +30,22 @@ export default function Navbar() {
             Sell
           </Link>
         </div>
+        <form action="/books" method="get" className="order-3 flex w-full max-w-md gap-2 sm:order-none sm:flex-1 sm:px-4">
+          <label htmlFor="nav-search" className="sr-only">
+            Search for books
+          </label>
+          <input
+            id="nav-search"
+            name="q"
+            type="search"
+            maxLength={100}
+            placeholder="Search books, authors or subjects"
+            className="min-w-0 flex-1 rounded-full border border-line bg-surface px-4 py-2 text-sm outline-none focus:border-brand"
+          />
+          <button type="submit" className="rounded-full bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">
+            Search
+          </button>
+        </form>
         <AuthNav />
       </div>
     </header>

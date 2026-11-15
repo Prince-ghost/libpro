@@ -3,9 +3,11 @@ import argon2 from "argon2";
 import mongoose from "mongoose";
 import { env } from "../lib/env.js";
 import { AppError } from "../lib/http.js";
-import { User, Session } from "../models/index.js";
+import { sendPasswordResetEmail } from "../lib/email.js";
+import { User, Session, PasswordResetToken } from "../models/index.js";
 
 const SESSION_MS = env.SESSION_TTL_DAYS * 24 * 60 * 60 * 1000;
+const PASSWORD_RESET_MS = 60 * 60 * 1000;
 
 // Verified against when the email is unknown, so unknown email and wrong password take similar time.
 const DUMMY_HASH = await argon2.hash("not-a-real-password", { type: argon2.argon2id });
@@ -48,6 +50,51 @@ export async function loginUser({ email, password }) {
   }
   const { token, expiresAt } = await createSession(user._id);
   return { user: toSafeUser(user), token, expiresAt };
+}
+
+export async function requestPasswordReset(email) {
+  const user = await User.findOne({ email }).select("_id status");
+  if (!user || user.status !== "active") return { devResetUrl: null };
+
+  const token = generateToken();
+  await PasswordResetToken.deleteMany({ userId: user._id });
+  await PasswordResetToken.create({
+    userId: user._id,
+    tokenHash: hashToken(token),
+    expiresAt: new Date(Date.now() + PASSWORD_RESET_MS),
+  });
+
+  const resetUrl = `${env.CLIENT_ORIGIN}/reset-password?token=${encodeURIComponent(token)}`;
+  try {
+    await sendPasswordResetEmail({ to: email, resetUrl });
+  } catch (err) {
+    if (!env.DEV_PASSWORD_RESET_LINKS || err?.code !== "EMAIL_UNAVAILABLE") throw err;
+    console.warn("Password reset email unavailable; returning a development-only reset link.");
+    return { devResetUrl: resetUrl };
+  }
+  return { devResetUrl: null };
+}
+
+export async function resetPassword({ token, password }) {
+  const passwordHash = await argon2.hash(password, { type: argon2.argon2id });
+  const resetToken = await PasswordResetToken.findOneAndUpdate(
+    {
+      tokenHash: hashToken(token),
+      usedAt: null,
+      expiresAt: mongoose.trusted({ $gt: new Date() }),
+    },
+    { $set: { usedAt: new Date() } },
+    { new: true }
+  );
+  if (!resetToken) {
+    throw new AppError(400, "INVALID_RESET_TOKEN", "This password reset link is invalid or expired.");
+  }
+
+  const user = await User.findByIdAndUpdate(resetToken.userId, { passwordHash }, { new: true });
+  if (!user || user.status !== "active") {
+    throw new AppError(400, "INVALID_RESET_TOKEN", "This password reset link is invalid or expired.");
+  }
+  await Session.deleteMany({ userId: user._id });
 }
 
 export async function destroySession(token) {

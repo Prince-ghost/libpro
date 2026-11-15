@@ -7,5 +7,19 @@ import Address from "./Address.js";
 import Order from "./Order.js";
 import AuditEvent from "./AuditEvent.js";
 import Image from "./Image.js";
+import PasswordResetToken from "./PasswordResetToken.js";
+import ExchangeRequest from "./ExchangeRequest.js";
 
-export { User, Book, Session, Cart, Wishlist, Address, Order, AuditEvent, Image };
+export {
+  User,
+  Book,
+  Session,
+  Cart,
+  Wishlist,
+  Address,
+  Order,
+  AuditEvent,
+  Image,
+  PasswordResetToken,
+  ExchangeRequest,
+};

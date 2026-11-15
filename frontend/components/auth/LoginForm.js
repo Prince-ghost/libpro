@@ -111,6 +111,11 @@ export default function LoginForm() {
       </button>
 
       <p className="text-center text-sm text-muted">
+        <Link href="/forgot-password" className="font-medium text-brand underline">
+          Forgot password?
+        </Link>
+      </p>
+      <p className="text-center text-sm text-muted">
         No account yet?{" "}
         <Link href={registerHref} className="font-medium text-brand underline">
           Sign up

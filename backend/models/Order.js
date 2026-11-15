@@ -62,6 +62,9 @@ const orderSchema = new mongoose.Schema(
     // Order status and payment status are separate on purpose.
     status: { type: String, enum: STATUSES, default: "placed" },
     paymentStatus: { type: String, enum: ["unpaid", "paid", "refunded"], default: "unpaid" },
+    razorpayOrderId: { type: String, unique: true, sparse: true },
+    razorpayPaymentId: { type: String },
+    paidAt: { type: Date },
     timeline: { type: [timelineSchema], default: [] },
     idempotencyKey: { type: String },
   },

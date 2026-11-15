@@ -21,3 +21,13 @@ export const loginSchema = z.object({
   email,
   password: z.string().min(1, "Password is required").max(128, "Password is too long"),
 });
+
+export const forgotPasswordSchema = z.object({ email });
+
+export const resetPasswordSchema = z.object({
+  token: z.string().trim().min(20, "Reset token is invalid").max(200, "Reset token is invalid"),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .max(128, "Password must be at most 128 characters"),
+});

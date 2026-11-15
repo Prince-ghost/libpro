@@ -125,7 +125,7 @@ export default function SaleDetail({ id }) {
 
       <p className="mt-4 rounded-xl border border-line bg-paper px-4 py-3 text-sm text-muted">
         You can only see your own books in this order and the delivery name and address, not the buyer&apos;s contact
-        details. BookBack does not take online payments yet.
+        details. Payment status is shown above; ship the book only after preparing the order.
       </p>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_20rem]">
@@ -216,8 +216,8 @@ export default function SaleDetail({ id }) {
                 confirming ? (
                   <div role="group" aria-label="Confirm shipping" className="mt-3">
                     <p className="text-sm">
-                      Mark your books in this order as shipped? There is no online payment yet, so only ship if you are
-                      happy to be paid when the book arrives.
+                      Mark your books in this order as shipped? Only continue if you are ready to hand the book to the
+                      delivery service.
                     </p>
                     {shipError && (
                       <p role="alert" className="mt-2 text-sm text-danger">

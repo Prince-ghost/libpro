@@ -8,6 +8,7 @@ import Alert from "@/components/ui/Alert";
 import BookGallery from "@/components/books/BookGallery";
 import CartActions from "@/components/shop/CartActions";
 import WishlistButton from "@/components/shop/WishlistButton";
+import ExchangeRequestForm from "@/components/shop/ExchangeRequestForm";
 
 const ID_RE = /^[a-f\d]{24}$/i;
 const MODERATION_TEXT = { pending: "waiting for approval", rejected: "not approved" };
@@ -137,6 +138,7 @@ export default function BookDetail({ id }) {
             <div className="mt-5 flex flex-wrap items-start gap-3">
               {canBuy && <CartActions book={book} />}
               {canSave && <WishlistButton book={book} />}
+              {canBuy && <ExchangeRequestForm book={book} />}
             </div>
           )}
 

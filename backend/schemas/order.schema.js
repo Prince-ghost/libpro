@@ -11,3 +11,9 @@ export const idempotencyHeaderSchema = z.object({
     .regex(/^[A-Za-z0-9_-]{8,64}$/, "Must be 8 to 64 letters, digits, - or _")
     .optional(),
 });
+
+export const razorpayVerificationSchema = z.object({
+  razorpayOrderId: z.string().min(1).max(80),
+  razorpayPaymentId: z.string().min(1).max(80),
+  razorpaySignature: z.string().min(1).max(200),
+});

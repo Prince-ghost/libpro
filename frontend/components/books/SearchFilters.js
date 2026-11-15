@@ -2,12 +2,20 @@
 
 import { useState } from "react";
 import { AUDIENCE_LABELS, CONDITION_LABELS } from "@/lib/format";
+import { CATEGORY_SUGGESTIONS } from "@/lib/book-form";
 import { MAX_PRICE_RUPEES } from "@/lib/browse-params";
 import FormField from "@/components/ui/FormField";
 import SelectField from "@/components/ui/SelectField";
 
-const EMPTY = { q: "", audience: "", condition: "", min: "", max: "" };
-const pick = (v) => ({ q: v.q, audience: v.audience, condition: v.condition, min: v.min, max: v.max });
+const EMPTY = { q: "", category: "", audience: "", condition: "", min: "", max: "" };
+const pick = (v) => ({
+  q: v.q,
+  category: v.category,
+  audience: v.audience,
+  condition: v.condition,
+  min: v.min,
+  max: v.max,
+});
 const isPrice = (v) => v === "" || (/^\d{1,6}$/.test(v) && Number(v) <= MAX_PRICE_RUPEES);
 
 export default function SearchFilters({ values, canClear, onApply, onClear }) {
@@ -97,7 +105,15 @@ export default function SearchFilters({ values, canClear, onApply, onClear }) {
       </button>
 
       <div id="filter-panel" className={`${panelOpen ? "block" : "hidden"} md:block`}>
-        <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
+        <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-5">
+          <SelectField id="category" label="Category" value={draft.category} onChange={onChange}>
+            <option value="">All</option>
+            {CATEGORY_SUGGESTIONS.map((category) => (
+              <option key={category} value={category}>
+                {category}
+              </option>
+            ))}
+          </SelectField>
           <SelectField id="audience" label="Suitable for" value={draft.audience} onChange={onChange}>
             <option value="">All</option>
             {Object.entries(AUDIENCE_LABELS).map(([value, label]) => (

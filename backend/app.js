@@ -16,6 +16,7 @@ import sellerRoutes from "./routes/seller.routes.js";
 import profileRoutes from "./routes/profile.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
 import imageRoutes from "./routes/images.routes.js";
+import exchangeRoutes from "./routes/exchange.routes.js";
 
 const app = express();
 
@@ -48,6 +49,7 @@ app.use("/api/seller", sellerRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/images", imageRoutes);
+app.use("/api/exchanges", exchangeRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

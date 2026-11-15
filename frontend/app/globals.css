@@ -21,6 +21,20 @@ body {
   background: var(--color-paper);
   color: var(--color-ink);
   font-family: var(--font-sans);
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'%3E%3Ccircle cx='10' cy='10' r='8' fill='%231f5f4a' stroke='%23fbf7f0' stroke-width='2'/%3E%3Ccircle cx='10' cy='10' r='2' fill='%23fbf7f0'/%3E%3C/svg%3E") 10 10, auto;
+}
+
+a,
+button,
+[role="button"],
+summary,
+select {
+  cursor: pointer;
+}
+
+button:disabled,
+select:disabled {
+  cursor: not-allowed;
 }
 
 /* Keyboard users must always be able to see where they are. */

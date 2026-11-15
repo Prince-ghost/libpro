@@ -132,7 +132,9 @@ export default function OrderDetail({ id }) {
       {justPlaced && (
         <div className="mt-4">
           <Alert tone="info">
-            Your order was placed. The books are being held for you. No payment has been taken.
+            {order.paymentStatus === "paid"
+              ? "Payment received. The seller can now prepare and ship your book."
+              : "Your order was placed. The books are being held for you until payment is completed."}
           </Alert>
         </div>
       )}
@@ -161,8 +163,9 @@ export default function OrderDetail({ id }) {
 
       {!cancelled && (
         <p className="mt-4 rounded-xl border border-line bg-paper px-4 py-3 text-sm text-muted">
-          BookBack does not take online payments yet, so no money has been taken. Only confirm that you received a book
-          once it is in your hands.
+          {order.paymentStatus === "paid"
+            ? "Payment is recorded. Confirm that you received the book only once it is in your hands."
+            : "Payment is still pending. Confirm that you received the book only once it is in your hands."}
         </p>
       )}
 

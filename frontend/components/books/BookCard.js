@@ -1,5 +1,6 @@
 import Link from "next/link";
 import BookCover from "@/components/books/BookCover";
+import CartActions from "@/components/shop/CartActions";
 import WishlistButton from "@/components/shop/WishlistButton";
 import { AUDIENCE_LABELS, CONDITION_LABELS, formatPrice } from "@/lib/format";
 
@@ -8,10 +9,10 @@ const STATUS_BADGE = { reserved: "Reserved", sold: "Sold" };
 export default function BookCard({ book }) {
   const badge = STATUS_BADGE[book.status];
   return (
-    <li className="relative">
+    <li className="group relative flex h-full flex-col rounded-2xl border border-line bg-surface p-3 transition hover:border-brand hover:shadow-sm">
       <Link
         href={`/books/${encodeURIComponent(book.id)}`}
-        className="group flex h-full flex-col rounded-2xl border border-line bg-surface p-3 transition hover:border-brand hover:shadow-sm"
+        className="flex min-h-0 flex-1 flex-col"
       >
         <BookCover book={book} />
         <h2 className="mt-3 line-clamp-2 break-words font-serif text-base font-bold leading-snug group-hover:text-brand sm:text-lg">
@@ -32,6 +33,7 @@ export default function BookCard({ book }) {
           )}
         </p>
       </Link>
+      <CartActions book={book} compact />
       {/* The heart sits next to the link, not inside it, because a button cannot live inside a link. */}
       <WishlistButton book={book} compact className="absolute right-4 top-4" />
     </li>

@@ -4,9 +4,15 @@ import { createLimiter } from "../lib/rate-limit.js";
 import { parseBody } from "../lib/validate.js";
 import { COOKIE_NAME, requireAuth, setSessionCookie, clearSessionCookie } from "../lib/auth.js";
 import { verifyGoogleIdToken } from "../lib/google.js";
-import { registerSchema, loginSchema } from "../schemas/auth.schema.js";
+import { registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema } from "../schemas/auth.schema.js";
 import { googleSignInSchema } from "../schemas/google.schema.js";
-import { registerUser, loginUser, destroySession } from "../services/auth.service.js";
+import {
+  registerUser,
+  loginUser,
+  destroySession,
+  requestPasswordReset,
+  resetPassword,
+} from "../services/auth.service.js";
 import { loginWithGoogle } from "../services/google-auth.service.js";
 
 const router = Router();
@@ -23,6 +29,8 @@ const googleLimiter = createLimiter({
   max: env.AUTH_RATE_LIMIT_MAX,
   skipSuccessfulRequests: true,
 });
+const resetRequestLimiter = createLimiter({ windowMs: 60 * 60 * 1000, max: 5 });
+const resetPasswordLimiter = createLimiter({ windowMs: 15 * 60 * 1000, max: 10 });
 
 router.post("/register", registerLimiter, async (req, res) => {
   const input = parseBody(registerSchema, req.body);
@@ -35,6 +43,24 @@ router.post("/login", loginLimiter, async (req, res) => {
   const { user, token, expiresAt } = await loginUser(input);
   setSessionCookie(res, token, expiresAt); // the token goes only in the cookie, never in the body
   res.status(200).json({ data: { user }, meta: { requestId: req.id } });
+});
+
+router.post("/forgot-password", resetRequestLimiter, async (req, res) => {
+  const { email } = parseBody(forgotPasswordSchema, req.body);
+  const { devResetUrl } = await requestPasswordReset(email);
+  res.status(202).json({
+    data: {
+      message: "If an account exists for that email, a reset link has been sent.",
+      ...(devResetUrl && { devResetUrl }),
+    },
+    meta: { requestId: req.id },
+  });
+});
+
+router.post("/reset-password", resetPasswordLimiter, async (req, res) => {
+  const input = parseBody(resetPasswordSchema, req.body);
+  await resetPassword(input);
+  res.status(200).json({ data: { reset: true }, meta: { requestId: req.id } });
 });
 
 // Only the signed Google token is read from the request. Email, name and id all come from

@@ -25,6 +25,9 @@ Backend for BookBack, a marketplace for used school and college books. Express a
 | AUTH_RATE_LIMIT_MAX | no | 10 | Failed logins (and registrations) per IP per window |
 | ORDER_RATE_LIMIT_MAX | no | 20 | Order creations per IP per hour |
 | TRUST_PROXY | no | 0 | Number of reverse proxies in front of the app |
+| RESEND_API_KEY | production | | Resend API key used for password reset emails |
+| EMAIL_FROM | production | | Verified Resend sender address |
+| DEV_PASSWORD_RESET_LINKS | no | false | Return a reset link in the response only for local development when email delivery is unavailable |
 
 ## Commands
 | Command | What it does |
@@ -39,7 +42,7 @@ Backend for BookBack, a marketplace for used school and college books. Express a
 ```
 app.js, server.js        Express app, and the process that starts it
 lib/                     env validation, database, auth helpers, errors, rate limiting, CSRF check
-models/                  Mongoose models (User, Session, Book, Cart, Wishlist, Address, Order, AuditEvent)
+models/                  Mongoose models (User, Session, Book, Cart, Wishlist, Address, Order, ExchangeRequest, AuditEvent)
 schemas/                 Zod request validation
 services/                Business rules
 routes/                  HTTP routes: validate, call a service, send the response
@@ -62,9 +65,9 @@ Tests create fake accounts ending in `@example.test` in the test database and de
 Security scenarios and where each is tested are listed in `docs/security-test-cases.md`.
 
 ## Known limitations
-- No payments yet: every order stays `unpaid`. A book in an unpaid order stays `reserved` until the buyer cancels (there is no automatic expiry).
+- Razorpay payments are supported. Keep `RAZORPAY_MODE=test` with `rzp_test_...` keys for fake payments. An unpaid order keeps its books reserved until the buyer cancels it.
 - No endpoint moves an order to confirmed, shipped or delivered.
-- No image upload yet (`imageKeys` is unused), and no password reset, email verification or email change.
+- No image upload yet (`imageKeys` is unused), and no email verification or email change.
 - Rate limits are kept in memory, so they only work correctly with a single server process.
 - Listing search uses a case-insensitive text match, which is fine for a small catalogue.
 - A rejection reason is stored in the audit log but not shown to the seller.

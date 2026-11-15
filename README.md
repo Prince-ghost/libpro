@@ -1,76 +1,72 @@
 # BookBack
 
-BookBack used school aur college books ke liye marketplace hai. Sellers listings banakar photos upload kar sakte hain, admins listings moderate karte hain, aur buyers books browse karke wishlist, cart aur orders manage kar sakte hain.
+BookBack is a marketplace for used school and college books. Sellers create listings and upload photos, admins moderate listings, and buyers can browse, save, add books to a cart, place orders, and track fulfilment.
 
 ## Project structure
 
-- `backend/` - Express, MongoDB aur Mongoose API
+- `backend/` - Express, MongoDB and Mongoose API
 - `frontend/` - Next.js website
-- `docs/` - API reference, security test cases aur deployment checklist
-- `postman/` - API collections, environments aur mocks
+- `docs/` - API reference, security test cases and deployment checklist
+- `postman/` - API collections, environments and mocks
 
 ```text
 libpro/
 ├── backend/
 │   ├── app.js                 # Express application
 │   ├── server.js              # API entry point
-│   ├── lib/                   # Database, auth, CSRF, validation aur rate limits
+│   ├── lib/                   # Database, auth, CSRF, validation and rate limits
 │   ├── models/                # Mongoose models
 │   ├── routes/                # HTTP route handlers
 │   ├── schemas/               # Request validation schemas
 │   ├── services/              # Business logic
-│   ├── scripts/               # Admin, seed, index aur test database utilities
+│   ├── scripts/               # Admin, seed, index and test-database utilities
 │   └── tests/integration/     # Vitest API integration tests
 ├── frontend/
-│   ├── app/                   # Next.js routes aur pages
-│   ├── components/            # Auth, books, shop, admin aur UI components
-│   ├── lib/                   # API client aur frontend helpers
+│   ├── app/                   # Next.js routes and pages
+│   ├── components/            # Auth, books, shop, admin and UI components
+│   ├── lib/                   # API client and frontend helpers
 │   └── e2e/                   # Playwright browser tests
-├── docs/                      # API, security aur deployment documentation
-├── postman/                   # Collections, environments, mocks aur specs
+├── docs/                      # API, security and deployment documentation
+├── postman/                   # Collections, environments, mocks and specs
 └── README.md
 ```
 
 ## Requirements
 
-- Node.js 24 (development mein isi version par test kiya gaya hai)
-- MongoDB Atlas ya koi aur MongoDB replica set. Orders mein transactions use hote hain, isliye standalone local MongoDB server enough nahi hai.
-- Same cluster par do databases: ek development ke liye aur ek tests ke liye. Test database ka naam `_test` par end hona chahiye.
+- Node.js 24 (the version used during development)
+- MongoDB Atlas, or another MongoDB replica set. Order creation uses transactions, so a standalone local MongoDB server is not enough.
+- Two databases on the same cluster: one for development and one for tests. The test database name must end in `_test`.
 
-## Local setup
+## Run locally
 
-### 1. Backend/API setup
+1. Install backend dependencies and configure the API:
 
-```powershell
-cd backend
-npm install
-Copy-Item .env.example .env
-```
+   ```powershell
+   cd backend
+   npm install
+   Copy-Item .env.example .env
+   ```
 
-`.env` mein `MONGODB_URI` aur `MONGODB_URI_TEST` set karo, phir API start karo:
+   Set `MONGODB_URI` and `MONGODB_URI_TEST` in `.env`, then start the API:
 
-```powershell
-npm run dev
-```
+   ```powershell
+   npm run dev
+   ```
 
-API default mein `http://localhost:5000` par chalegi. Health check:
+   The API runs at `http://localhost:5000`. Verify it at `http://localhost:5000/api/health`.
 
-`http://localhost:5000/api/health`
+2. In a second terminal, install and start the frontend:
 
-### 2. Frontend setup
+   ```powershell
+   cd frontend
+   npm install
+   Copy-Item .env.example .env.local
+   npm run dev
+   ```
 
-Ek second terminal mein:
+   Open `http://localhost:3000`. Use `localhost`, not `127.0.0.1`, so the session cookie and CORS settings match.
 
-```powershell
-cd frontend
-npm install
-Copy-Item .env.example .env.local
-npm run dev
-```
-
-Website `http://localhost:3000` par open karo. `localhost` use karo, `127.0.0.1` nahi, taaki session cookie aur CORS settings correctly match karein.
-
-### Demo data (optional)
+Optional demo data:
 
 ```powershell
 cd backend
@@ -78,40 +74,38 @@ npm run seed-demo
 npm run seed-demo -- --remove
 ```
 
-Pehli command demo books add karti hai aur doosri command unhe remove karti hai.
-
 ## Main features
 
-- Cookie-based authentication with password login aur optional Google sign-in
-- Book listings with moderation, search, filters, categories aur seller management
-- Image uploads with validation, resizing aur thumbnails
-- Cart, wishlist aur saved addresses
-- Transaction-based order creation with idempotency support
-- Seller shipping updates aur buyer delivery confirmation
-- Admin dashboards for listings, users, orders aur audit events
-- CSRF protection, security headers, validation aur rate limiting
+- Cookie-based authentication with password login and optional Google sign-in
+- Book listings with moderation, search, filters, categories and seller management
+- Image uploads with validation, resizing and thumbnails
+- Cart, wishlist and saved addresses
+- Transactional order creation with idempotency support
+- Seller shipping updates and buyer delivery confirmation
+- Admin dashboards for listings, users, orders and audit events
+- CSRF protection, security headers, validation and rate limiting
 
 ## Frontend screens
 
-- `/` - home page aur API health status
-- `/books` aur `/books/[id]` - catalogue, filters, search aur book details
-- `/login` aur `/register` - authentication
-- `/sell`, `/my-listings` aur `/my-listings/[id]/edit` - seller listing management
+- `/` - home page and API health status
+- `/books` and `/books/[id]` - catalogue, filters, search and book details
+- `/login` and `/register` - authentication
+- `/sell`, `/my-listings` and `/my-listings/[id]/edit` - seller listing management
 - `/wishlist`, `/cart`, `/checkout` - shopping flow
-- `/orders` aur `/orders/[id]` - buyer orders, cancellation aur receipt confirmation
-- `/sales` aur `/sales/[id]` - seller orders aur shipping
-- `/account` aur `/addresses` - profile aur address management
-- `/admin`, `/admin/listings`, `/admin/orders`, `/admin/users` aur `/admin/audit` - admin tools
+- `/orders` and `/orders/[id]` - buyer orders, cancellation and receipt confirmation
+- `/sales` and `/sales/[id]` - seller orders and shipping
+- `/account` and `/addresses` - profile and address management
+- `/admin`, `/admin/listings`, `/admin/orders`, `/admin/users` and `/admin/audit` - admin tools
 
-## Admin account banana
+## Admin account
 
-New accounts normal users hote hain. Pehle website se account register karo, phir backend directory se admin banao:
+New accounts are regular users. Register normally, then promote an account from the backend directory:
 
 ```powershell
 npm run make-admin -- someone@example.com
 ```
 
-Admin screens `/admin` par available hain. Admin access revoke karne ke liye:
+Admin screens are available at `/admin`. To revoke admin access:
 
 ```powershell
 npm run make-admin -- someone@example.com --revoke
@@ -123,67 +117,73 @@ npm run make-admin -- someone@example.com --revoke
 - Frontend lint: `cd frontend; npm run lint`
 - Frontend production build: `cd frontend; npm run build`
 - Frontend browser tests: `cd frontend; npm run e2e`
-- Latest Playwright report open karna: `cd frontend; npm run e2e:report`
-- Interrupted test run ke baad test database reset karna: `cd backend; npm run reset-test-db`
+- Open the latest Playwright report: `cd frontend; npm run e2e:report`
+- Reset the test database after an interrupted run: `cd backend; npm run reset-test-db`
 
-Backend mein 14 serial integration suites hain. Inke liye transaction-capable MongoDB test database chahiye jiska naam `_test` par end hota ho.
+The backend has 14 serial integration suites. They require a transaction-capable MongoDB test database whose name ends in `_test`.
 
-Browser tests sirf test database reset karte hain, frontend ko port 3100 par build/start karte hain aur API ko port 5100 par start karte hain. Chromium tests serially, ek worker ke saath run hote hain. In tests mein authentication, marketplace browsing, cart, checkout, moderation, photos, fulfilment, admin access, cookies aur XSS-safe rendering cover hote hain. Development data ko touch nahi kiya jata.
+Browser tests reset only that test database, build and start the frontend on port 3100, start the API on port 5100, and run Chromium tests serially with one worker. They cover authentication, marketplace browsing, cart and checkout, moderation, photos, fulfilment, admin access, cookies and XSS-safe rendering. They never touch development data.
 
-Security scenarios aur unki coverage [docs/security-test-cases.md](docs/security-test-cases.md) mein hai.
+Security scenarios and their coverage are documented in [docs/security-test-cases.md](docs/security-test-cases.md).
 
 ## Google sign-in (optional)
 
-Google Cloud mein OAuth client banao aur dono `.env` files mein public Client ID set karo:
+Create an OAuth client in Google Cloud and set the public Client ID in both `.env` files:
 
 - Backend: `GOOGLE_CLIENT_ID`
 - Frontend: `NEXT_PUBLIC_GOOGLE_CLIENT_ID`
 
-`GOOGLE_CLIENT_ID` configure na hone par backend ka Google endpoint unavailable rahega. Application mein client secret use nahi hota.
+The backend Google endpoint is unavailable when `GOOGLE_CLIENT_ID` is not configured. No client secret is used by this application.
 
-## Environment variables
+## Environment notes
 
-Backend configuration `backend/.env` mein hoti hai:
+Backend configuration is in `backend/.env`:
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `NODE_ENV` | `development` | `development`, `test` ya `production` |
+| `NODE_ENV` | `development` | `development`, `test` or `production` |
 | `PORT` | `5000` | API listening port |
-| `CLIENT_ORIGIN` | `http://localhost:3000` | Allowed frontend origin; production mein HTTPS hona chahiye |
-| `MONGODB_URI` | - | Development ya production database |
-| `MONGODB_URI_TEST` | - | Test database; database name `_test` par end hona chahiye |
-| `SESSION_TTL_DAYS` | `7` | Session lifetime, 1 se 90 days ke beech |
+| `CLIENT_ORIGIN` | `http://localhost:3000` | Allowed frontend origin; must be HTTPS in production |
+| `MONGODB_URI` | - | Development or production database |
+| `MONGODB_URI_TEST` | - | Test database; database name must end in `_test` |
+| `SESSION_TTL_DAYS` | `7` | Session lifetime, from 1 to 90 days |
 | `AUTH_RATE_LIMIT_MAX` | `10` | Failed login/registration requests per rate-limit window |
-| `ORDER_RATE_LIMIT_MAX` | `20` | Har hour order creation requests |
-| `TRUST_PROXY` | `0` | Trusted reverse proxies ki count |
+| `ORDER_RATE_LIMIT_MAX` | `20` | Order creation requests per hour |
+| `TRUST_PROXY` | `0` | Number of trusted reverse proxies |
+| `RAZORPAY_MODE` | `test` | Razorpay mode; keep `test` for fake payments |
+| `RAZORPAY_KEY_ID` | - | Razorpay public key used by the checkout modal |
+| `RAZORPAY_KEY_SECRET` | - | Razorpay server secret used to create and verify payments |
+| `RESEND_API_KEY` | - | Resend API key for password reset emails |
+| `EMAIL_FROM` | - | Verified Resend sender, for example `BookBack <no-reply@example.com>` |
+| `DEV_PASSWORD_RESET_LINKS` | `false` | Development-only fallback that displays a reset link when Resend is unavailable |
 
-Frontend configuration `frontend/.env.local` mein hoti hai:
+Frontend configuration is in `frontend/.env.local`:
 
 | Variable | Default | Purpose |
 |---|---|---|
 | `NEXT_PUBLIC_API_URL` | `http://localhost:5000` | Browser-facing API base URL |
 | `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | - | Optional public Google OAuth client ID |
 
-`NEXT_PUBLIC_API_URL` frontend build ke time embed hota hai. Isliye `npm run build` se pehle deployed API ka correct URL set karo. Frontend credentials ke saath API requests bhejta hai, isliye `CLIENT_ORIGIN`, cookies aur frontend/API domains ko saath mein configure karna zaroori hai. Same-site domains use karo, jaise `app.example.com` aur `api.example.com`.
+`NEXT_PUBLIC_API_URL` is baked into the frontend build and must point to the deployed API before `npm run build`. The frontend sends API requests with credentials, so the API `CLIENT_ORIGIN`, cookie settings and frontend/API domains must be configured together. Use same-site domains such as `app.example.com` and `api.example.com`.
 
 ## Current limitations
 
-- Payments integrate nahi hain; new orders `unpaid` start hote hain.
-- Unpaid reservations automatically expire nahi hote; buyer ko eligible order cancel karna hota hai.
-- `confirmed` order status data model mein hai, lekin abhi use nahi ho raha.
-- Chat, exchanges aur donations implemented nahi hain.
-- Email verification, password reset aur email change flows implemented nahi hain.
-- Sellers apni rejected listings ka rejection reason dekh sakte hain.
-- Shipping flat INR 40 placeholder hai; shipping quote step nahi hai.
-- Rate limits process memory mein store hote hain. Multiple API instances ke liye shared store chahiye.
-- Search case-insensitive regular-expression matching use karta hai, jo small catalogue ke liye suitable hai.
-- Image binaries MongoDB mein store hote hain, object storage mein nahi.
-- Audit-log immutability application convention se enforce hoti hai; production mein database write/delete permissions bhi restrict karo.
+- Razorpay payments are integrated. Keep `RAZORPAY_MODE=test` and use `rzp_test_...` keys for fake payments; production live payments require `RAZORPAY_MODE=live`.
+- Unpaid reservations do not expire automatically; the buyer must cancel an eligible order.
+- The `confirmed` order status exists in the data model but is not currently used.
+- Chat and donations are not implemented. Book exchanges support manual request, accept and reject flows.
+- Email verification and email changes are not implemented. Password reset uses Resend when configured.
+- Sellers cannot currently see the rejection reason shown in the admin audit log.
+- Shipping is a flat INR 40 placeholder and there is no shipping quote step.
+- Rate limits are stored in memory, so production should run a single API process or use a shared store.
+- Search uses case-insensitive regular-expression matching and is intended for a smaller catalogue.
+- Image binaries are stored in MongoDB rather than object storage.
+- Audit-log immutability is enforced by application convention; production should also restrict database write and delete permissions.
 
-## API aur deployment documentation
+## API and deployment documentation
 
 - API reference: [docs/api.md](docs/api.md)
 - Deployment checklist: [docs/deployment-checklist.md](docs/deployment-checklist.md)
-- Backend setup aur commands: [backend/README.md](backend/README.md)
+- Backend setup and commands: [backend/README.md](backend/README.md)
 
-Tests pass hona alone production-ready hone ki guarantee nahi hai. Deployment checklist complete karo, HTTPS, backups aur monitoring configure karo, aur launch se pehle staging walkthrough run karo.
+Passing tests alone does not make the application production-ready. Complete the deployment checklist, configure HTTPS, backups and monitoring, and run a staging walkthrough before launch.

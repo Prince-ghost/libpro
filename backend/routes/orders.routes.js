@@ -3,7 +3,11 @@ import { env } from "../lib/env.js";
 import { requireAuth } from "../lib/auth.js";
 import { createLimiter } from "../lib/rate-limit.js";
 import { parseBody, parseQuery, parseObjectId } from "../lib/validate.js";
-import { createOrderSchema, idempotencyHeaderSchema } from "../schemas/order.schema.js";
+import {
+  createOrderSchema,
+  idempotencyHeaderSchema,
+  razorpayVerificationSchema,
+} from "../schemas/order.schema.js";
 import { pageQuerySchema } from "../schemas/book.schema.js";
 import * as orders from "../services/order.service.js";
 import * as fulfilment from "../services/fulfilment.service.js";
@@ -39,6 +43,17 @@ router.get("/:id", async (req, res) => {
 router.post("/:id/cancel", async (req, res) => {
   const id = parseObjectId(req.params.id);
   send(req, res, 200, await orders.cancelOrder(req.user, id));
+});
+
+router.post("/:id/payments/razorpay", orderLimiter, async (req, res) => {
+  const id = parseObjectId(req.params.id);
+  send(req, res, 200, await orders.createPaymentOrder(req.user, id));
+});
+
+router.post("/:id/payments/razorpay/verify", orderLimiter, async (req, res) => {
+  const id = parseObjectId(req.params.id);
+  const payment = parseBody(razorpayVerificationSchema, req.body);
+  send(req, res, 200, await orders.verifyPayment(req.user, id, payment));
 });
 
 router.post("/:id/items/:bookId/received", async (req, res) => {

@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import mongoose from "mongoose";
+import { env } from "../lib/env.js";
 import { AppError } from "../lib/http.js";
 import { runInTransaction } from "../lib/db.js";
 import { Address, Book, Cart, Order } from "../models/index.js";
@@ -191,8 +192,89 @@ export async function createOrder(actor, { addressId, idempotencyKey }) {
       if (err?.code === 11000 && err.keyPattern?.orderNumber) continue; // order-number collision: try again
       throw err;
     }
+
   }
   throw new Error("Could not allocate an order number");
+}
+
+function assertRazorpayConfigured() {
+  if (!env.RAZORPAY_KEY_ID || !env.RAZORPAY_KEY_SECRET) {
+    throw new AppError(503, "PAYMENT_NOT_CONFIGURED", "Online payments are not configured yet.");
+  }
+}
+
+async function createRazorpayOrder(order) {
+  assertRazorpayConfigured();
+  const response = await fetch("https://api.razorpay.com/v1/orders", {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${Buffer.from(`${env.RAZORPAY_KEY_ID}:${env.RAZORPAY_KEY_SECRET}`).toString("base64")}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      amount: order.totalMinor,
+      currency: order.currency,
+      receipt: order.orderNumber,
+      notes: { bookbackOrderId: String(order._id) },
+    }),
+  });
+  if (!response.ok) {
+    throw new AppError(502, "PAYMENT_GATEWAY_ERROR", "Razorpay could not create the payment order.");
+  }
+  return response.json();
+}
+
+export async function createPaymentOrder(actor, id) {
+  const order = await Order.findOne({ _id: id, buyerId: actor.id });
+  if (!order) throw new AppError(404, "NOT_FOUND", "Order not found.");
+  if (order.paymentStatus === "paid") return { order: toOrderDto(order), razorpay: null };
+  if (order.status === "cancelled") {
+    throw new AppError(409, "ORDER_CANCELLED", "This order was cancelled.");
+  }
+
+  if (!order.razorpayOrderId) {
+    const gatewayOrder = await createRazorpayOrder(order);
+    order.razorpayOrderId = gatewayOrder.id;
+    await order.save();
+  }
+
+  return {
+    order: toOrderDto(order),
+    razorpay: {
+      keyId: env.RAZORPAY_KEY_ID,
+      orderId: order.razorpayOrderId,
+      amount: order.totalMinor,
+      currency: order.currency,
+      name: "BookBack",
+      description: `BookBack order ${order.orderNumber}`,
+    },
+  };
+}
+
+export async function verifyPayment(actor, id, { razorpayOrderId, razorpayPaymentId, razorpaySignature }) {
+  assertRazorpayConfigured();
+  const order = await Order.findOne({ _id: id, buyerId: actor.id });
+  if (!order) throw new AppError(404, "NOT_FOUND", "Order not found.");
+  if (order.paymentStatus === "paid") return toOrderDto(order);
+  if (order.razorpayOrderId !== razorpayOrderId) {
+    throw new AppError(400, "PAYMENT_MISMATCH", "Payment details do not match this order.");
+  }
+
+  const expected = crypto
+    .createHmac("sha256", env.RAZORPAY_KEY_SECRET)
+    .update(`${razorpayOrderId}|${razorpayPaymentId}`)
+    .digest("hex");
+  const expectedBuffer = Buffer.from(expected);
+  const receivedBuffer = Buffer.from(razorpaySignature);
+  if (expectedBuffer.length !== receivedBuffer.length || !crypto.timingSafeEqual(expectedBuffer, receivedBuffer)) {
+    throw new AppError(400, "PAYMENT_VERIFICATION_FAILED", "Payment verification failed.");
+  }
+
+  order.paymentStatus = "paid";
+  order.razorpayPaymentId = razorpayPaymentId;
+  order.paidAt = new Date();
+  await order.save();
+  return toOrderDto(order);
 }
 
 export async function listOrders(actor, { page, limit }) {
