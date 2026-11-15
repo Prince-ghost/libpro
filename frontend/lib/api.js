@@ -1,5 +1,5 @@
 // The one place that talks to the BookBack API.
-export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
+export const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000").replace(/\/+$/, "");
 
 export class ApiError extends Error {
   constructor(status, code, message, details = [], requestId = null) {
