@@ -28,7 +28,7 @@
 - [ ] Run a single server process, because rate limits are kept in memory. For several processes, add a shared rate-limit store first.
 - [ ] Logs are collected and contain no passwords, cookies or connection strings. Error alerts are set up.
 - [ ] There is a written rollback step (redeploy the previous version).
-- [ ] Payments stay disabled, and the interface says orders are unpaid.
+- [ ] Keep `RAZORPAY_MODE=test` with `rzp_test_...` credentials for staging; switch to `live` only after production payment approval.
 
 ## Staging walkthrough (fake accounts)
 - [ ] Register, log in and log out

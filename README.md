@@ -1,6 +1,8 @@
 # BookBack
 
-BookBack is a marketplace for used school and college books. Sellers create listings and upload photos, admins moderate listings, and buyers can browse, save, add books to a cart, place orders, and track fulfilment.
+BookBack is a full-stack marketplace for giving used school, competitive-exam and college books a second life. A buyer can discover books by subject or course, save favourites, add a book to the cart, buy it now, pay through Razorpay test mode, and follow delivery progress. Sellers manage their own listings and shipments, while administrators moderate catalogue content and oversee marketplace activity.
+
+The project is designed as a practical marketplace foundation rather than a production payment-and-logistics company. It demonstrates authentication, catalogue management, image storage, cart and order workflows, seller fulfilment, exchanges and secure API patterns in one application.
 
 ## Project structure
 
@@ -74,16 +76,32 @@ npm run seed-demo
 npm run seed-demo -- --remove
 ```
 
+The demo seed creates approved listings for Classes 9–12 and a wide range of college courses. It also imports the cover images in `backend/assets/demo-covers/` into MongoDB. Demo listings belong to the non-loginable `demo.seller@example.test` seller; create a listing with a normal account when testing the seller shipping workflow.
+
 ## Main features
 
 - Cookie-based authentication with password login and optional Google sign-in
+- Password reset through Resend, with a development-only reset-link fallback
 - Book listings with moderation, search, filters, categories and seller management
 - Image uploads with validation, resizing and thumbnails
-- Cart, wishlist and saved addresses
-- Transactional order creation with idempotency support
+- Cart, wishlist, saved addresses and one-click Buy now
+- Razorpay checkout integration with test-mode payment signature verification
+- Transactional order creation with idempotency support and one-of-a-kind book reservations
 - Seller shipping updates and buyer delivery confirmation
+- Exchange requests with seller accept/reject controls and manual handoff
 - Admin dashboards for listings, users, orders and audit events
 - CSRF protection, security headers, validation and rate limiting
+
+## Marketplace flow
+
+1. A seller registers, creates a listing and uploads optional cover photos.
+2. An administrator approves the listing before it becomes publicly available.
+3. A buyer searches or filters the catalogue, saves a book, adds it to the cart or selects **Buy now**.
+4. The buyer selects a delivery address and completes a Razorpay payment. Development and staging should use `rzp_test_...` credentials, so no real money is charged.
+5. The book is reserved for that order. The seller opens **Sales**, reviews the delivery address and marks the book as shipped.
+6. The buyer confirms receipt, which completes fulfilment for that book.
+
+Each listing belongs to the account that created it. The demo catalogue is owned by the seeded demo seller; real listings are shipped by their real seller account. Razorpay live payments, when deliberately enabled, are collected by the configured BookBack merchant account; seller payouts are not automated yet.
 
 ## Frontend screens
 
@@ -94,6 +112,8 @@ npm run seed-demo -- --remove
 - `/wishlist`, `/cart`, `/checkout` - shopping flow
 - `/orders` and `/orders/[id]` - buyer orders, cancellation and receipt confirmation
 - `/sales` and `/sales/[id]` - seller orders and shipping
+- `/exchanges` - sent and received book exchange requests
+- `/forgot-password` and `/reset-password` - password recovery
 - `/account` and `/addresses` - profile and address management
 - `/admin`, `/admin/listings`, `/admin/orders`, `/admin/users` and `/admin/audit` - admin tools
 
@@ -110,6 +130,91 @@ Admin screens are available at `/admin`. To revoke admin access:
 ```powershell
 npm run make-admin -- someone@example.com --revoke
 ```
+
+## Deploy on Render
+
+Deploy the backend and frontend as two separate Render Web Services. Use custom domains under the same parent domain when possible, such as `api.example.com` and `app.example.com`; this keeps the session cookie compatible with the browser.
+
+### 1. Prepare MongoDB Atlas
+
+1. Create a dedicated production database and database user.
+2. Grant the user `readWrite` access only to that database.
+3. Configure Atlas Network Access for Render. Render outbound IPs may be dynamic, so allowing `0.0.0.0/0` is convenient but should be restricted or documented according to your Render plan.
+4. Copy the production connection string. Do not use `MONGODB_URI_TEST` or the development database.
+
+### 2. Create the backend service
+
+In Render, choose **New → Web Service**, connect the repository, and set:
+
+| Setting | Value |
+|---|---|
+| Root Directory | `backend` |
+| Runtime | Node |
+| Build Command | `npm ci` |
+| Start Command | `npm start` |
+
+Add these environment variables in Render. Keep secrets in Render only; do not commit them:
+
+```text
+NODE_ENV=production
+CLIENT_ORIGIN=https://app.example.com
+MONGODB_URI=<production MongoDB URI>
+TRUST_PROXY=1
+RESEND_API_KEY=<Resend production key>
+EMAIL_FROM=BookBack <no-reply@your-verified-domain.example>
+RAZORPAY_MODE=test
+RAZORPAY_KEY_ID=rzp_test_...
+RAZORPAY_KEY_SECRET=<Razorpay test secret>
+```
+
+Use the Render-provided `PORT`; do not hard-code a different port. Add `GOOGLE_CLIENT_ID` only when Google sign-in is configured. Keep `RAZORPAY_MODE=test` for fake payments. Change it to `live` only after a real payment launch has been deliberately approved.
+
+After deployment, copy the backend URL and verify:
+
+```text
+https://<backend-service>.onrender.com/api/health
+```
+
+It must return HTTP 200.
+
+Run production indexes once from a secure local terminal using the production `MONGODB_URI`:
+
+```powershell
+cd backend
+npm run indexes
+npm run make-admin -- your-admin@example.com
+```
+
+Remove the production connection string from your local environment after these commands. Never run `npm run seed-demo` against production.
+
+### 3. Create the frontend service
+
+Create another Render Web Service with:
+
+| Setting | Value |
+|---|---|
+| Root Directory | `frontend` |
+| Runtime | Node |
+| Build Command | `npm ci && npm run build` |
+| Start Command | `npm start` |
+
+Add this environment variable **before the first build**:
+
+```text
+NEXT_PUBLIC_API_URL=https://<backend-service>.onrender.com
+```
+
+`NEXT_PUBLIC_API_URL` is baked into the Next.js build. If you later add a custom API domain, update this variable and redeploy the frontend.
+
+### 4. Connect domains and verify
+
+1. Add the final frontend domain to the backend `CLIENT_ORIGIN` exactly, including `https://` and without a trailing slash.
+2. Update `NEXT_PUBLIC_API_URL` to the final API URL and redeploy the frontend.
+3. Open the site and test registration, login, logout, cart, checkout and seller shipping.
+4. With `RAZORPAY_MODE=test`, use only Razorpay test credentials and test payment methods. No real money is charged.
+5. Confirm the browser stores `bookback_sid` as `Secure` and `HttpOnly`.
+
+Render's free services may sleep when idle. The first request after inactivity can be slow; this is expected and is not an application error.
 
 ## Tests
 
@@ -169,6 +274,7 @@ Frontend configuration is in `frontend/.env.local`:
 ## Current limitations
 
 - Razorpay payments are integrated. Keep `RAZORPAY_MODE=test` and use `rzp_test_...` keys for fake payments; production live payments require `RAZORPAY_MODE=live`.
+- Razorpay test keys are required for the checkout modal; without them the API intentionally reports that payments are not configured.
 - Unpaid reservations do not expire automatically; the buyer must cancel an eligible order.
 - The `confirmed` order status exists in the data model but is not currently used.
 - Chat and donations are not implemented. Book exchanges support manual request, accept and reject flows.
