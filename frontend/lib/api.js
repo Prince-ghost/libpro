@@ -1,5 +1,7 @@
 // The one place that talks to the BookBack API.
-export const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000").replace(/\/+$/, "");
+// An empty origin keeps deployed requests same-origin so Next.js can proxy /api
+// to the backend and preserve the session cookie.
+export const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/+$/, "");
 
 export class ApiError extends Error {
   constructor(status, code, message, details = [], requestId = null) {
