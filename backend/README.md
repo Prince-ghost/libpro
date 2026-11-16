@@ -27,7 +27,7 @@ Backend for BookBack, a marketplace for used school and college books. Express a
 | TRUST_PROXY | no | 0 | Number of reverse proxies in front of the app |
 | RESEND_API_KEY | production | | Resend API key used for password reset emails |
 | EMAIL_FROM | production | | Verified Resend sender address |
-| DEV_PASSWORD_RESET_LINKS | no | false | Return a reset link in the response only for local development when email delivery is unavailable |
+| DEV_PASSWORD_RESET_LINKS | no | false | Return a reset link when email delivery is unavailable; use only for private/demo deployments |
 
 ## Commands
 | Command | What it does |

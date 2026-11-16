@@ -58,9 +58,6 @@ const schema = z
         ctx.addIssue({ code: "custom", path: ["RAZORPAY_KEY_ID"], message: "Live mode requires an rzp_live_ key" });
       }
     }
-    if (vars.NODE_ENV === "production" && vars.DEV_PASSWORD_RESET_LINKS) {
-      ctx.addIssue({ code: "custom", path: ["DEV_PASSWORD_RESET_LINKS"], message: "Must be false in production" });
-    }
   });
 
 const parsed = schema.safeParse(process.env);

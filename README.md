@@ -260,7 +260,7 @@ Backend configuration is in `backend/.env`:
 | `RAZORPAY_KEY_SECRET` | - | Razorpay server secret used to create and verify payments |
 | `RESEND_API_KEY` | - | Resend API key for password reset emails |
 | `EMAIL_FROM` | - | Verified Resend sender, for example `BookBack <no-reply@example.com>` |
-| `DEV_PASSWORD_RESET_LINKS` | `false` | Development-only fallback that displays a reset link when Resend is unavailable |
+| `DEV_PASSWORD_RESET_LINKS` | `false` | Private/demo fallback that displays a reset link when Resend is unavailable; do not enable for a public deployment |
 
 Frontend configuration is in `frontend/.env.local`:
 
