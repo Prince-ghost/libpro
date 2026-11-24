@@ -6,6 +6,9 @@ function apiOrigin() {
 }
 
 const nextConfig = {
+  experimental: {
+    agentUpgrade: "security",
+  },
   async rewrites() {
     const origin = apiOrigin();
     return origin ? [{ source: "/api/:path*", destination: `${origin}/api/:path*` }] : [];
